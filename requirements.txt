@@ -13,7 +13,8 @@ geopandas>=0.14.0
 folium>=0.15.0
 leafmap>=0.29.6
 
-# Excel & file handling
+# Excel & file handlinggit commit -m "Add requirements.txt"
+
 openpyxl>=3.1.2
 
 # Tambahan umum
