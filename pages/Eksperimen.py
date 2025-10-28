@@ -292,7 +292,7 @@ with tab1:
 
     k = None
     if metode in ["K-Means", "Agglomerative Hierarchical Clustering (AHC)"]:
-        k = st.slider("Pilih Jumlah Cluster (k):", 2, 10, 3,
+        k = st.slider("Pilih Jumlah Cluster (k):", 2, 7, 3,
                       key="slider_k", on_change=reset_experiment_state)
     else:
         st.info("🤖 Jumlah cluster akan ditentukan otomatis oleh algoritma.")
@@ -300,7 +300,6 @@ with tab1:
     # =====================================================
     # 🚀 Jalankan Eksperimen (DENGAN LOADING BAR)
     # =====================================================
-    st.markdown("### 🚀 Jalankan Eksperimen")
     st.caption(
         "Klik tombol di bawah untuk menjalankan metode clustering yang kamu pilih.")
 
@@ -611,11 +610,9 @@ with tab1:
                 st.markdown("---")
 
                 # =======================================================
-                # 📋 TABEL INTERAKTIF
+                # 📋 TABEL & 📊 GRAFIK JUMLAH KABUPATEN/KOTA PER CLUSTER
                 # =======================================================
                 with st.spinner("📋 Menyiapkan Daftar Kabupaten/Kota..."):
-                    st.markdown(
-                        "### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster")
 
                     df_cluster_list = (
                         df[["Kabupaten/Kota", "Cluster"]]
@@ -633,8 +630,88 @@ with tab1:
                     df_cluster_list["Kabupaten/Kota"] = df_cluster_list["Kabupaten/Kota"].apply(
                         format_nama)
 
-                    st.dataframe(df_cluster_list,
-                                 use_container_width=True, hide_index=True)
+                    # =======================================================
+                    # 📊 TABEL & GRAFIK BERDAMPINGAN
+                    # =======================================================
+                    # Rasio kolom disesuaikan agar tabel lebih sempit
+                    # tabel sedikit lebih kecil daripada grafik
+                    col1, col2 = st.columns([1.0, 1.3])
+
+                    with col1:
+                        st.markdown(
+                            "### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster")
+                        st.dataframe(
+                            df_cluster_list,
+                            use_container_width=False,  # supaya gak maksa lebar penuh
+                            width=380,                  # atur lebar tabel
+                            hide_index=True
+                        )
+
+                    with col2:
+                        # =======================================================
+                        # 📊 JUMLAH KABUPATEN/KOTA PER CLUSTER (UNIK DAN AMAN)
+                        # =======================================================
+
+                        # Pastikan setiap kabupaten/kota hanya dihitung sekali (hindari duplikat lintas tahun)
+                        df_unique_cluster = (
+                            df_cluster_list
+                            .drop_duplicates(subset=["Kabupaten/Kota"], keep="last")
+                            .copy()
+                        )
+
+                        # Hitung jumlah kab/kota per cluster
+                        cluster_counts = (
+                            df_unique_cluster.groupby(
+                                "Cluster")["Kabupaten/Kota"]
+                            .count()
+                            .reset_index()
+                            .rename(columns={"Kabupaten/Kota": "Jumlah_KabKota"})
+                        )
+
+                        # Urutkan berdasarkan nomor cluster
+                        cluster_counts = cluster_counts.sort_values(
+                            by="Cluster", ascending=True)
+
+                        # Warna batang sesuai urutan cluster
+                        cluster_colors_list = [cluster_colors.get(
+                            c, "#999999") for c in cluster_counts["Cluster"]]
+
+                        # =======================================================
+                        # 🎨 Plot bar chart dengan judul
+                        # =======================================================
+                        st.markdown(
+                            "### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster")
+
+                        fig, ax = plt.subplots(figsize=(4.8, 3.3))
+                        sns.barplot(
+                            x="Cluster", y="Jumlah_KabKota",
+                            data=cluster_counts,
+                            palette=cluster_colors_list,
+                            ax=ax
+                        )
+
+                        # Tambahkan judul langsung di atas plot
+                        ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster",
+                                     fontsize=12, fontweight="bold", pad=10)
+
+                        # Tambahkan label di atas batang
+                        for container in ax.containers:
+                            ax.bar_label(
+                                container, fmt="%d", label_type="edge", fontsize=9, padding=2, color="#222")
+
+                        # Tambah ruang atas biar label gak ketimpa
+                        ymax = cluster_counts["Jumlah_KabKota"].max()
+                        ax.set_ylim(0, ymax * 1.15)
+
+                        # Label sumbu dan gaya
+                        ax.set_xlabel("Cluster", fontsize=11)
+                        ax.set_ylabel("Jumlah Kab/Kota", fontsize=11)
+                        ax.grid(True, axis="y", linestyle="--", alpha=0.3)
+                        plt.tight_layout()
+
+                        # Tampilkan di Streamlit
+                        st.pyplot(fig)
+                        plt.close(fig)
 
         # =====================================================
         # TAB 2: TRENDS (ADAPTIF)
