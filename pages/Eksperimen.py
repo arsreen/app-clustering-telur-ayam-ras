@@ -2141,13 +2141,11 @@ with tab3:
     # 2️⃣ PILIH VARIABEL ANALISIS
     # =====================================================
     st.markdown("### ⚙️ Konfigurasi Analisis")
-
     all_features = [
         "Harga Telur Ayam Ras (Rp)",
         "Konsumsi Telur Ayam Ras per Kapita",
         "Pengeluaran Telur Ayam Ras (Rp)"
     ]
-
     selected_features = st.multiselect(
         "📊 Pilih Variabel yang Akan Digunakan untuk Clustering:",
         options=all_features,
@@ -2157,16 +2155,11 @@ with tab3:
         on_change=reset_experiment_state_tab3
     )
 
-    # 🚨 Minimal 1 variabel harus dipilih
     if len(selected_features) == 0:
         st.warning("⚠️ Minimal pilih satu variabel untuk melanjutkan.")
         st.stop()
 
-    # ✅ Pastikan variabel yang digunakan sesuai pilihan user terakhir
-    fitur = selected_features
-    st.session_state["fitur_tab3"] = selected_features
-
-    # Simpan dataframe yang sudah difilter (kalau kamu butuh)
+    fitur = st.session_state.get("fitur_tab3", selected_features)
     st.session_state["df_filtered_tab3"] = df
 
     # =====================================================
