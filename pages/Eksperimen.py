@@ -2134,7 +2134,9 @@ with tab3:
 
     # ✅ Simpan hanya dataframe yang udah difilter (tanpa overwrite key multiselect)
     fitur = selected_features
-    st.session_state["df_filtered_tab3"] = df
+    kolom_dipakai = ["Kabupaten/Kota", "Tahun"] + fitur
+    st.session_state["df_filtered_tab3"] = df[kolom_dipakai].copy()
+
 
     # Tampilkan ringkasan pilihan user
     st.success(
