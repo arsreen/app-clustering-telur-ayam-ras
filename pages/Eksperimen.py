@@ -2137,9 +2137,9 @@ with tab3:
         f"✅ Semua sheet valid. Data dari tahun {tahun_dari}–{tahun_sampai} berhasil dimuat "
     )
 
-    # =====================================================
-    # 2️⃣ PILIH VARIABEL ANALISIS
-    # =====================================================
+    # =========================================================
+    # 2️⃣ PILIH VARIABEL UNTUK ANALISIS
+    # =========================================================
     st.markdown("### ⚙️ Konfigurasi Analisis")
 
     all_features = [
@@ -2154,20 +2154,21 @@ with tab3:
         default=all_features,
         help="Kamu bisa pilih 1–3 variabel.",
         key="fitur_tab3",
-        on_change=reset_experiment_state_tab3
+        on_change=reset_experiment_state_tab3  # fungsi reset versi tab 3
     )
 
-    # 🚨 Minimal 1 variabel harus dipilih
+    # 🚨 Minimal 1 variabel wajib dipilih
     if len(selected_features) == 0:
         st.warning("⚠️ Minimal pilih satu variabel untuk melanjutkan.")
         st.stop()
 
-    # ✅ Pastikan variabel yang digunakan sesuai pilihan user terakhir
-    fitur = selected_features
+    # ✅ Simpan variabel terpilih agar sesuai dengan pilihan terakhir
     st.session_state["fitur_tab3"] = selected_features
+    fitur = selected_features
 
-    # Simpan dataframe yang sudah difilter (kalau kamu butuh)
+    # ✅ Simpan dataframe hasil filter (kalau digunakan di proses berikutnya)
     st.session_state["df_filtered_tab3"] = df
+
 
     # =====================================================
     # 3️⃣ ATUR JUMLAH CLUSTER UNTUK METODE MANUAL
