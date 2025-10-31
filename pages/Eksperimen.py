@@ -2106,31 +2106,41 @@ with tab3:
     st.success(f"✅ Semua sheet valid. Data dari tahun {tahun_dari}–{tahun_sampai} berhasil dimuat.")
 
     # =====================================================
-    # ⚙️ PILIH VARIABEL ANALISIS (DYNAMIC)
+    # 2️⃣ PILIH VARIABEL UNTUK ANALISIS
     # =====================================================
     st.markdown("### ⚙️ Konfigurasi Analisis")
+
+    # Semua fitur yang tersedia dalam dataset template
     all_features = [
         "Harga Telur Ayam Ras (Rp)",
         "Konsumsi Telur Ayam Ras per Kapita",
         "Pengeluaran Telur Ayam Ras (Rp)"
     ]
 
+    # ✅ Multiselect dinamis: user bebas pilih 1–3 variabel
     selected_features = st.multiselect(
         "📊 Pilih Variabel yang Akan Digunakan untuk Clustering:",
         options=all_features,
-        default=all_features,
-        help="Kamu bisa pilih 1–3 variabel.",
-        key="fitur_tab3_multiselect",
+        default=all_features,  # default tetap 3 variabel
+        help="Kamu bisa pilih 1–3 variabel sesuai kebutuhan analisis.",
+        key="fitur_tab3_multiselect",  # ⬅️ penting: jangan ditimpa manual
         on_change=reset_experiment_state_tab3
     )
 
+    # 🚨 Validasi: user harus pilih minimal 1 variabel
     if len(selected_features) == 0:
         st.warning("⚠️ Minimal pilih satu variabel untuk melanjutkan.")
         st.stop()
 
+    # ✅ Simpan hanya dataframe yang udah difilter (tanpa overwrite key multiselect)
     fitur = selected_features
-    st.session_state["fitur_tab3_multiselect"] = fitur
     st.session_state["df_filtered_tab3"] = df
+
+    # Tampilkan ringkasan pilihan user
+    st.success(
+        f"✅ {len(fitur)} variabel terpilih: {', '.join(fitur)}"
+    )
+
 
     # =====================================================
     # ⚙️ ATUR JUMLAH CLUSTER
