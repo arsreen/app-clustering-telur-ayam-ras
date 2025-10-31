@@ -351,7 +351,7 @@ with tab1:
             else:
                 labels, k_auto, sil = run_intelligent_kmedoids_streamlit(X_scaled)
                 st.info(
-                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **2**")
+                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **{k}**")
 
             # --- 3️⃣ Evaluasi & Simpan Hasil ---
             progress.progress(0.8)
@@ -1290,7 +1290,9 @@ with tab2:
         df_base = st.session_state["df_filtered_tab2"]
 
         hasil = {}
+        data = {}  # ✅ tambahkan biar gak NameError waktu simpan k_auto
         progress = st.progress(0)
+
         for i, (metode, k) in enumerate([(metode1, k1), (metode2, k2)], start=1):
             df_temp = df_base.copy()
             start_time = time.perf_counter()
@@ -1304,7 +1306,12 @@ with tab2:
                 labels = run_ahc(X_scaled, k)
             else:
                 labels, k_auto, sil = run_intelligent_kmedoids_streamlit(X_scaled)
-                st.info(f"🤖 Jumlah cluster optimal untuk {metode}: **2**")
+                data["k"] = k_auto  # ✅ simpan hasil jumlah cluster otomatis
+                st.info(f"🤖 Jumlah cluster optimal untuk {metode}: **{k_auto}**")
+
+            df_temp["Cluster"] = labels
+            sil, dbi = evaluate_clusters(X_scaled, labels)
+            end_time = time.perf_counter()
 
             df_temp["Cluster"] = labels
             sil, dbi = evaluate_clusters(X_scaled, labels)
@@ -1849,43 +1856,62 @@ with tab2:
                     st.warning(
                         "⚠️ Kolom 'Kabupaten/Kota' tidak ditemukan dalam dataset.")
 
-            # =====================================================
-            # 📈 TAB C: SILHOUETTE PLOT
-            # =====================================================
-            with tabC:
-                st.markdown("### 📈 Silhouette Plot per Metode")
-                with st.spinner("🔄 Membuat Silhouette Plot..."):
-                    n_methods = len(hasil)
-                    n_cols = 2 if n_methods == 2 else 1
-                    cols = st.columns(n_cols)
-                    for i, (metode, data) in enumerate(hasil.items()):
-                        with cols[i % n_cols]:
-                            fig, ax = plt.subplots(figsize=(6, 4))
-                            silhouette_vals = silhouette_samples(
-                                data["X_scaled"], data["labels"])
-                            y_lower, y_upper = 0, 0
-                            yticks = []
-                            for c in range(data["k"]):
-                                c_sil = silhouette_vals[data["labels"] == c]
-                                c_sil.sort()
-                                y_upper += len(c_sil)
-                                ax.barh(range(y_lower, y_upper),
-                                        c_sil, height=1.0)
-                                yticks.append((y_lower + y_upper) / 2)
-                                y_lower += len(c_sil)
-                            ax.axvline(
-                                data["sil"], color="red", linestyle="--")
-                            ax.set_yticks(yticks)
-                            ax.set_yticklabels(range(data["k"]))
-                            ax.set_xlabel("Silhouette Coefficient")
-                            ax.set_ylabel("Cluster")
-                            ax.set_title(
-                                f"{metode}", fontsize=11, fontweight="bold")
-                            ax.grid(True, linestyle="--", alpha=0.3)
-                            plt.tight_layout()
-                            st.pyplot(fig)
-                            plt.close(fig)
-                st.success("✅ Silhouette plot selesai dibuat!")
+                # =====================================================
+                # 📈 TAB C: SILHOUETTE PLOT
+                # =====================================================
+                with tabC:
+                    st.markdown("### 📈 Silhouette Plot per Metode")
+                    with st.spinner("🔄 Membuat Silhouette Plot..."):
+                        n_methods = len(hasil)
+                        n_cols = 2 if n_methods == 2 else 1
+                        cols = st.columns(n_cols)
+
+                        for i, (metode, data) in enumerate(hasil.items()):
+                            with cols[i % n_cols]:
+                                fig, ax = plt.subplots(figsize=(6, 4))
+
+                                # ✅ pastikan semua key tersedia dan tidak None
+                                X_scaled = data.get("X_scaled")
+                                labels = data.get("labels")
+                                k_val = data.get("k")
+                                sil_val = data.get("sil", None)
+
+                                if X_scaled is None or labels is None:
+                                    st.warning(f"⚠️ Data untuk {metode} belum lengkap, tidak bisa buat plot.")
+                                    continue
+
+                                # ✅ kalau k belum ada / None → hitung manual
+                                if k_val is None:
+                                    k_val = len(np.unique(labels))
+                                    data["k"] = k_val  # update biar aman untuk plotting
+
+                                silhouette_vals = silhouette_samples(X_scaled, labels)
+
+                                y_lower, y_upper = 0, 0
+                                yticks = []
+                                for c in range(k_val):
+                                    c_sil = silhouette_vals[labels == c]
+                                    c_sil.sort()
+                                    y_upper += len(c_sil)
+                                    ax.barh(range(y_lower, y_upper), c_sil, height=1.0)
+                                    yticks.append((y_lower + y_upper) / 2)
+                                    y_lower += len(c_sil)
+
+                                # garis rata-rata silhouette
+                                if sil_val is not None:
+                                    ax.axvline(sil_val, color="red", linestyle="--")
+
+                                ax.set_yticks(yticks)
+                                ax.set_yticklabels(range(k_val))
+                                ax.set_xlabel("Silhouette Coefficient")
+                                ax.set_ylabel("Cluster")
+                                ax.set_title(f"{metode}", fontsize=11, fontweight="bold")
+                                ax.grid(True, linestyle="--", alpha=0.3)
+                                plt.tight_layout()
+                                st.pyplot(fig)
+                                plt.close(fig)
+
+                    st.success("✅ Silhouette plot selesai dibuat!")
 
             # =====================================================
             # 🎯 TAB D: SCATTER / PAIRGRID
@@ -2169,7 +2195,8 @@ with tab3:
     # 4️⃣ JALANKAN SEMUA METODE (OTOMATIS)
     # =====================================================
     st.caption(
-        "Semua metode akan dijalankan otomatis: **K-Means**, **AHC**, dan **Intelligent K-Medoids**.")
+        "Semua metode akan dijalankan otomatis: **K-Means**, **AHC**, dan **Intelligent K-Medoids**."
+    )
 
     if st.button("🚀 Jalankan Semua Metode", key="run_triple_tab3"):
         df_base = st.session_state["df_filtered_tab3"]
@@ -2182,6 +2209,7 @@ with tab3:
         ]
 
         hasil = {}
+        data = {}  # ✅ tambahkan inisialisasi biar gak NameError
         progress = st.progress(0)
 
         for i, (metode, k) in enumerate(metode_k, start=1):
@@ -2196,12 +2224,15 @@ with tab3:
                 labels = run_ahc(X_scaled, k)
             else:
                 labels, k_auto, sil = run_intelligent_kmedoids_streamlit(X_scaled)
+                data["k"] = k_auto  # ✅ simpan hasil cluster otomatis
                 st.info(
-                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **2**")
+                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **{k_auto}**"
+                )
 
             df_temp["Cluster"] = labels
             sil, dbi = evaluate_clusters(X_scaled, labels)
             end_time = time.perf_counter()
+
 
             waktu_komputasi = end_time - start_time
             waktu_fmt = f"{waktu_komputasi*1000:.2f} ms" if waktu_komputasi < 1 else f"{waktu_komputasi:.2f} detik"
@@ -2704,37 +2735,67 @@ with tab3:
                 st.warning(
                     "⚠️ Kolom 'Kabupaten/Kota' tidak ditemukan dalam dataset.")
 
-        # === SILHOUETTE ===
+        # =====================================================
+        # 📈 TAB C: SILHOUETTE PLOT (TIGA METODE)
+        # =====================================================
         with tabC:
             st.markdown("### 📈 Silhouette Plot per Metode")
             with st.spinner("🔄 Membuat Silhouette Plot..."):
-                n_cols = 3
+                n_methods = len(hasil)
+                n_cols = 3 if n_methods >= 3 else 2
                 cols = st.columns(n_cols)
+
                 for i, (metode, data) in enumerate(hasil.items()):
                     with cols[i % n_cols]:
-                        fig, ax = plt.subplots(figsize=(5, 4))
-                        silhouette_vals = silhouette_samples(
-                            data["X_scaled"], data["labels"])
+                        X_scaled = data.get("X_scaled")
+                        labels = data.get("labels")
+                        sil_val = data.get("sil")
+                        k_val = data.get("k")
+
+                        # --- Cegah error kalau ada data kosong ---
+                        if X_scaled is None or labels is None:
+                            st.warning(f"⚠️ Data untuk {metode} belum lengkap.")
+                            continue
+
+                        # --- Kalau 'k' belum terset, hitung otomatis dari label unik ---
+                        if k_val is None or not isinstance(k_val, int):
+                            k_val = len(np.unique(labels))
+                            data["k"] = k_val
+
+                        # --- Buat plot silhouette ---
+                        fig, ax = plt.subplots(figsize=(6, 4))
+                        silhouette_vals = silhouette_samples(X_scaled, labels)
                         y_lower, y_upper = 0, 0
                         yticks = []
-                        for c in range(data["k"]):
-                            c_sil = silhouette_vals[data["labels"] == c]
-                            c_sil.sort()
-                            y_upper += len(c_sil)
-                            ax.barh(range(y_lower, y_upper), c_sil, height=1.0)
+
+                        # ✅ ubah 'c' jadi 'cluster_id' biar gak warning
+                        for cluster_id in range(k_val):
+                            cluster_sil_vals = silhouette_vals[labels == cluster_id]
+                            cluster_sil_vals.sort()
+                            y_upper += len(cluster_sil_vals)
+                            ax.barh(range(y_lower, y_upper), cluster_sil_vals, height=1.0)
                             yticks.append((y_lower + y_upper) / 2)
-                            y_lower += len(c_sil)
-                        ax.axvline(data["sil"], color="red", linestyle="--")
+                            y_lower += len(cluster_sil_vals)
+
+                        # --- Garis rata-rata silhouette ---
+                        if sil_val is not None:
+                            ax.axvline(sil_val, color="red", linestyle="--", label="Rata-rata Silhouette")
+
+                        # --- Gaya visualisasi ---
                         ax.set_yticks(yticks)
-                        ax.set_yticklabels(range(data["k"]))
+                        ax.set_yticklabels(range(k_val))
                         ax.set_xlabel("Silhouette Coefficient")
                         ax.set_ylabel("Cluster")
-                        ax.set_title(f"{metode}", fontsize=11,
-                                     fontweight="bold")
+                        ax.set_title(f"{metode}", fontsize=11, fontweight="bold")
+                        ax.legend(loc="lower right")
                         ax.grid(True, linestyle="--", alpha=0.3)
+
+                        plt.tight_layout()
                         st.pyplot(fig)
                         plt.close(fig)
+
             st.success("✅ Silhouette plot selesai dibuat!")
+
 
         # =====================================================
         # TAB D: SCATTER PER VARIABEL (LAYOUT HORIZONTAL PER METODE)
