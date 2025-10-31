@@ -2121,11 +2121,11 @@ with tab3:
     selected_features = st.multiselect(
         "📊 Pilih Variabel yang Akan Digunakan untuk Clustering:",
         options=all_features,
-        default=all_features,  # default tetap 3 variabel
+        default=all_features,
         help="Kamu bisa pilih 1–3 variabel sesuai kebutuhan analisis.",
-        key="fitur_tab3_multiselect",  # ⬅️ penting: jangan ditimpa manual
-        on_change=reset_experiment_state_tab3
+        key="fitur_tab3_multiselect"  # 🚫 tanpa on_change
     )
+
 
     # 🚨 Validasi: user harus pilih minimal 1 variabel
     if len(selected_features) == 0:
