@@ -351,7 +351,7 @@ with tab1:
             else:
                 labels, k_auto, sil = run_intelligent_kmedoids_streamlit(X_scaled)
                 st.info(
-                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **{k}**")
+                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **2**")
 
             # --- 3️⃣ Evaluasi & Simpan Hasil ---
             progress.progress(0.8)
@@ -685,7 +685,7 @@ with tab1:
                 col1, col2 = st.columns([1.0, 1.3])
 
                 with col1:
-                    st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster (Dominan)")
+                    st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster")
                     st.dataframe(
                         df_cluster_list,
                         use_container_width=False,
@@ -710,7 +710,7 @@ with tab1:
                         cluster_colors.get(c, "#999999") for c in cluster_counts["Cluster"]
                     ]
 
-                    st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster (Dominan)")
+                    st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster")
 
                     fig, ax = plt.subplots(figsize=(4.8, 3.3))
                     sns.barplot(
@@ -722,7 +722,7 @@ with tab1:
                     )
 
                     # Tambahkan judul langsung di atas plot
-                    ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster (Dominan)",
+                    ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster",
                                 fontsize=12, fontweight="bold", pad=10)
 
                     # Tambahkan label di atas batang
@@ -739,23 +739,6 @@ with tab1:
                     plt.tight_layout()
                     st.pyplot(fig)
                     plt.close(fig)
-
-                    # =======================================================
-                    # 🎨 LEGENDAR WARNA (SAMA DENGAN BOX PLOT/PETA)
-                    # =======================================================
-                    legend_html = "".join([
-                        f"<span style='display:inline-flex; align-items:center; gap:5px; margin-right:10px;'>"
-                        f"<span style='width:14px; height:14px; background-color:{cluster_colors.get(c)}; "
-                        f"border-radius:3px; display:inline-block;'></span>"
-                        f"<span style='font-size:13px; color:#333;'>Cluster {c}</span>"
-                        f"</span>"
-                        for c in sorted(cluster_colors.keys())
-                    ])
-
-                    st.markdown(
-                        f"<div style='text-align:center; margin-top:6px; display:flex; justify-content:center; flex-wrap:wrap; gap:10px;'>{legend_html}</div>",
-                        unsafe_allow_html=True
-                    )
 
         # =====================================================
         # TAB 2: TRENDS (ADAPTIF)
@@ -1602,7 +1585,7 @@ with tab2:
                                 col1, col2 = st.columns([1.0, 1.3])
 
                                 with col1:
-                                    st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster (Dominan)")
+                                    st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster")
                                     st.dataframe(
                                         df_cluster_list,
                                         use_container_width=False,
@@ -1627,7 +1610,7 @@ with tab2:
                                         cluster_colors.get(c, "#999999") for c in cluster_counts["Cluster"]
                                     ]
 
-                                    st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster (Dominan)")
+                                    st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster")
 
                                     fig, ax = plt.subplots(figsize=(4.8, 3.3))
                                     sns.barplot(
@@ -1639,7 +1622,7 @@ with tab2:
                                     )
 
                                     # Tambahkan judul langsung di atas plot
-                                    ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster (Dominan)",
+                                    ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster",
                                                 fontsize=12, fontweight="bold", pad=10)
 
                                     # Tambahkan label di atas batang
@@ -2505,7 +2488,7 @@ with tab3:
                         col1, col2 = st.columns([1.0, 1.3])
 
                         with col1:
-                            st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster (Dominan)")
+                            st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster")
                             st.dataframe(
                                 df_cluster_list,
                                 use_container_width=False,
@@ -2530,7 +2513,7 @@ with tab3:
                                 cluster_colors.get(c, "#999999") for c in cluster_counts["Cluster"]
                             ]
 
-                            st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster (Dominan)")
+                            st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster")
 
                             fig, ax = plt.subplots(figsize=(4.8, 3.3))
                             sns.barplot(
@@ -2542,7 +2525,7 @@ with tab3:
                             )
 
                             # Tambahkan judul langsung di atas plot
-                            ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster (Dominan)",
+                            ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster",
                                         fontsize=12, fontweight="bold", pad=10)
 
                             # Tambahkan label di atas batang

@@ -120,7 +120,7 @@ Aplikasi ini membandingkan tiga metode clustering (<b>K-Means</b>, <b>AHC</b>, d
 st.subheader("Sekilas Data Analisis")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown("""<div class="metric-card"><span class="metric-icon">📈</span><h3>Jumlah Wilayah</h3><h2>462 Kabupaten/Kota</h2></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metric-card"><span class="metric-icon">📈</span><h3>Jumlah Wilayah</h3><h2>487 Kabupaten/Kota</h2></div>""", unsafe_allow_html=True)
 with col2:
     st.markdown("""<div class="metric-card"><span class="metric-icon">📊</span><h3>Sumber Data</h3><h2>BPS & Bapanas<br></h2></div>""", unsafe_allow_html=True)
 with col3:
