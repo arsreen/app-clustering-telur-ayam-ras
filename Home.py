@@ -26,20 +26,22 @@ st.set_page_config(
 # =========================================================
 
 st.sidebar.markdown("### 📘 Panduan Penggunaan")
-st.sidebar.write("Unduh *Manual Book* untuk panduan lengkap penggunaan aplikasi.")
+st.sidebar.write(
+    "Unduh *Manual Book* untuk panduan lengkap penggunaan aplikasi.")
 
 # Membaca file manual book dari sidebar
 try:
-    with open("data/Manual_Book_Clustering_TelurAyamRas.pdf", "rb") as file:
+    with open("data/Manual_Book_Clustering_Telur_Ayam_Ras.pdf", "rb") as file:
         st.sidebar.download_button(
             label="📥 Download Manual Book (PDF)",
             data=file,
-            file_name="Manual_Book_Clustering_TelurAyamRas.pdf",
+            file_name="Manual_Book_Clustering_Telur_Ayam_Ras.pdf",
             mime="application/pdf",
-            use_container_width=True # Membuat tombol full-width di sidebar
+            use_container_width=True  # Membuat tombol full-width di sidebar
         )
 except FileNotFoundError:
-    st.sidebar.error("File 'Manual_Book_Clustering_TelurAyamRas.pdf' tidak ditemukan di folder 'data/'.")
+    st.sidebar.error(
+        "File 'Manual_Book_Clustering_Telur_Ayam_Ras.pdf' tidak ditemukan di folder 'data/'.")
 
 
 # =========================================================
@@ -66,13 +68,16 @@ padding:12px 16px; margin-top:1.5rem; font-size:14px;}
 # =========================================================
 
 # 1. Judul & Subjudul
-st.markdown('<h1 class="minimal-title">Analisis Klasterisasi Telur Ayam Ras di Indonesia</h1>', unsafe_allow_html=True)
-st.markdown('<p class="minimal-subtitle">Pemetaan Pola Harga, Konsumsi, dan Pengeluaran</p>', unsafe_allow_html=True)
+st.markdown('<h1 class="minimal-title">Analisis Klasterisasi Telur Ayam Ras di Indonesia</h1>',
+            unsafe_allow_html=True)
+st.markdown('<p class="minimal-subtitle">Pemetaan Pola Harga, Konsumsi, dan Pengeluaran</p>',
+            unsafe_allow_html=True)
 st.divider()
 
 # 2. Penjelasan "Kenapa Telur Ayam Ras?" + Gambar
 st.markdown("### 🐔 Mengapa Telur Ayam Ras?")
-col_img, col_text = st.columns([1, 2]) # 1/3 lebar untuk gambar, 2/3 lebar untuk teks
+# 1/3 lebar untuk gambar, 2/3 lebar untuk teks
+col_img, col_text = st.columns([1, 2])
 
 with col_img:
     # 3. Gambar Telur (Sesuai permintaanmu)
@@ -80,7 +85,8 @@ with col_img:
     try:
         st.image("data/telur_ayam_ras.jpg", caption="")
     except FileNotFoundError:
-        st.warning("File gambar 'data/telur_ayam_ras.jpg' tidak ditemukan. Silakan tambahkan file tersebut.")
+        st.warning(
+            "File gambar 'data/telur_ayam_ras.jpg' tidak ditemukan. Silakan tambahkan file tersebut.")
 
 with col_text:
     st.markdown("""
@@ -89,7 +95,8 @@ with col_text:
     - Memiliki **fluktuasi harga tinggi** yang berpengaruh langsung terhadap daya beli masyarakat dan menjadi salah satu penyumbang inflasi bahan pangan.
 """, unsafe_allow_html=True)
 
-st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True) # Spacer
+st.markdown("<div style='margin-bottom:25px;'></div>",
+            unsafe_allow_html=True)  # Spacer
 
 # 4. Penjelasan Aplikasi (Tujuan)
 st.markdown("### 🎯 Tujuan Aplikasi Ini")
@@ -113,7 +120,7 @@ Aplikasi ini membandingkan tiga metode clustering (<b>K-Means</b>, <b>AHC</b>, d
 st.subheader("Sekilas Data Analisis")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown("""<div class="metric-card"><span class="metric-icon">📈</span><h3>Jumlah Wilayah</h3><h2>487 Kabupaten/Kota</h2></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metric-card"><span class="metric-icon">📈</span><h3>Jumlah Wilayah</h3><h2>462 Kabupaten/Kota</h2></div>""", unsafe_allow_html=True)
 with col2:
     st.markdown("""<div class="metric-card"><span class="metric-icon">📊</span><h3>Sumber Data</h3><h2>BPS & Bapanas<br></h2></div>""", unsafe_allow_html=True)
 with col3:
@@ -124,7 +131,8 @@ st.divider()
 # ⚙️ TAB METODE YANG DIGUNAKAN
 # =========================================================
 st.markdown("### ⚙️ Metode yang Digunakan")
-tab1, tab2, tab3 = st.tabs(["**K-Means**", "**Agglomerative (AHC)**", "**Intelligent K-Medoids**"])
+tab1, tab2, tab3 = st.tabs(
+    ["**K-Means**", "**Agglomerative (AHC)**", "**Intelligent K-Medoids**"])
 
 with tab1:
     st.markdown("""
@@ -152,6 +160,8 @@ st.markdown("<div style='margin-top:45px;'></div>", unsafe_allow_html=True)
 # =========================================================
 # 📂 LOAD & PROSES DATA
 # =========================================================
+
+
 @st.cache_data
 def load_all_sheets(excel_path):
     xls = pd.ExcelFile(excel_path)
@@ -162,22 +172,25 @@ def load_all_sheets(excel_path):
         frames.append(df_temp)
     return pd.concat(frames, ignore_index=True)
 
+
 # Pastikan path file data/Dataset Ready.xlsx sudah benar
 try:
     excel_path = "data/Dataset Ready.xlsx"
     df = load_all_sheets(excel_path)
     df.columns = df.columns.str.strip()
-    df["Kabupaten/Kota"] = df["Kabupaten/Kota"].astype(str).str.strip().str.upper()
+    df["Kabupaten/Kota"] = df["Kabupaten/Kota"].astype(
+        str).str.strip().str.upper()
 
-    fitur = [c for c in df.select_dtypes(include=[np.number]).columns if c not in ["Cluster"]]
+    fitur = [c for c in df.select_dtypes(
+        include=[np.number]).columns if c not in ["Cluster"]]
     scaler = MinMaxScaler()
     X_scaled = scaler.fit_transform(df[fitur])
 
     # Model Clustering (Contoh menggunakan K-Means, sesuaikan jika perlu)
     # Di aplikasi skripsi aslimu, ini mungkin akan dinamis
-    kmeans = KMeans(n_clusters=2, random_state=42, n_init=10) 
+    kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
     df["Cluster"] = kmeans.fit_predict(X_scaled)
-    cluster_colors = {0: "#4C72B0", 1: "#DD8452"} # Biru dan Oranye
+    cluster_colors = {0: "#4C72B0", 1: "#DD8452"}  # Biru dan Oranye
 
     # =========================================================
     # 🗺️ PETA INTERAKTIF
@@ -193,20 +206,24 @@ try:
             return gdf
 
         gdf = load_geojson()
-        gdf["NAME_2"] = gdf["NAME_2"].str.replace("KABUPATEN", "", case=False).str.replace("KOTA", "", case=False).str.strip().str.upper()
-        df["Kabupaten/Kota"] = df["Kabupaten/Kota"].str.replace("KABUPATEN", "", case=False).str.replace("KOTA", "", case=False).str.strip().str.upper()
-        
+        gdf["NAME_2"] = gdf["NAME_2"].str.replace("KABUPATEN", "", case=False).str.replace(
+            "KOTA", "", case=False).str.strip().str.upper()
+        df["Kabupaten/Kota"] = df["Kabupaten/Kota"].str.replace(
+            "KABUPATEN", "", case=False).str.replace("KOTA", "", case=False).str.strip().str.upper()
+
         # Merge data
-        gdf = gdf.merge(df[["Kabupaten/Kota", "Cluster"] + fitur], left_on="NAME_2", right_on="Kabupaten/Kota", how="left")
+        gdf = gdf.merge(df[["Kabupaten/Kota", "Cluster"] + fitur],
+                        left_on="NAME_2", right_on="Kabupaten/Kota", how="left")
 
         def make_tooltip(row):
             if pd.isna(row["Kabupaten/Kota"]) or pd.isna(row["Cluster"]):
                 return "<b>Tidak Ada Data</b>"
-            
+
             # Format judul (Title Case)
-            nama_wilayah = row['Kabupaten/Kota'].title().replace("Dki ", "DKI ")
+            nama_wilayah = row['Kabupaten/Kota'].title().replace("Dki ",
+                                                                 "DKI ")
             teks = f"<b>{nama_wilayah}</b><br><b>Cluster:</b> {int(row['Cluster'])}<hr>"
-            
+
             # Format data fitur
             for f in fitur:
                 if f in row and pd.notnull(row[f]):
@@ -231,14 +248,15 @@ try:
                 "fillColor": (
                     cluster_colors.get(x["properties"].get("Cluster"))
                     if pd.notnull(x["properties"].get("Cluster"))
-                    else "#C8C8C8" # Warna abu-abu untuk data NaN
+                    else "#C8C8C8"  # Warna abu-abu untuk data NaN
                 ),
-                "color": "#4d4d4d", # Warna batas
+                "color": "#4d4d4d",  # Warna batas
                 "weight": 0.4,
                 "opacity": 0.6,
                 "fillOpacity": 0.9,
             },
-            tooltip=folium.GeoJsonTooltip(fields=["info"], aliases=[""], labels=False, sticky=True),
+            tooltip=folium.GeoJsonTooltip(fields=["info"], aliases=[
+                                          ""], labels=False, sticky=True),
         )
         m.add_layer(geo_layer)
         m.to_streamlit(height=550)
@@ -251,7 +269,8 @@ try:
     try:
         auto_labels = interpretasi_untuk_legend_otomatis(df, fitur)
         for cluster in sorted(auto_labels.keys()):
-            color = cluster_colors.get(cluster, list(cluster_colors.values())[0])
+            color = cluster_colors.get(
+                cluster, list(cluster_colors.values())[0])
             label = auto_labels[cluster]
             st.markdown(
                 f"""
@@ -270,7 +289,8 @@ try:
     except Exception as e:
         st.error(f"Error saat membuat interpretasi: {e}")
 
-    st.markdown("<div style='margin-top: 25px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 25px;'></div>",
+                unsafe_allow_html=True)
     # =========================================================
     # 📦 BOX PLOT
     # =========================================================
@@ -278,10 +298,10 @@ try:
         with st.spinner("🔄 Membuat Boxplot..."):
             plt.close("all")
             n_vars = len(fitur)
-            n_cols = min(n_vars, 3) # Maksimal 3 kolom
+            n_cols = min(n_vars, 3)  # Maksimal 3 kolom
             cols = st.columns(n_cols, gap="large")
             palette = ["#4C72B0", "#DD8452"]
-            
+
             for i, var in enumerate(fitur):
                 with cols[i % n_cols]:
                     fig, ax = plt.subplots(figsize=(4.3, 3.5))
@@ -293,11 +313,12 @@ try:
                     ax.set_xlabel("Tahun")
                     ax.set_ylabel(var)
                     ax.grid(True, axis="y", linestyle="--", alpha=0.3)
-                    
+
                     # Format Y-axis (misal: Rupiah)
                     if "Harga" in var or "Pengeluaran" in var:
-                        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'Rp {x:,.0f}'))
-                    
+                        ax.yaxis.set_major_formatter(
+                            plt.FuncFormatter(lambda x, p: f'Rp {x:,.0f}'))
+
                     ax.get_legend().remove()
                     plt.tight_layout()
                     st.pyplot(fig)
@@ -317,9 +338,11 @@ try:
 # Error handling jika file utama tidak ada
 except FileNotFoundError as e:
     if "Dataset Ready.xlsx" in str(e):
-        st.error("File 'data/Dataset Ready.xlsx' tidak ditemukan. Pastikan file data utama ada.")
+        st.error(
+            "File 'data/Dataset Ready.xlsx' tidak ditemukan. Pastikan file data utama ada.")
     elif "Indonesia_cities.geojson" in str(e):
-        st.error("File 'data/Indonesia_cities.geojson' tidak ditemukan. Pastikan file geojson ada.")
+        st.error(
+            "File 'data/Indonesia_cities.geojson' tidak ditemukan. Pastikan file geojson ada.")
     else:
         st.error(f"File tidak ditemukan: {e}")
 except ImportError:

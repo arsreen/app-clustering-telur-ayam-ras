@@ -98,11 +98,8 @@ def interpretasi_untuk_legend_otomatis(df, fitur, cluster_palette=None):
         5: ["Sangat Rendah", "Rendah", "Sedang", "Tinggi", "Sangat Tinggi"],
         6: ["Sangat Rendah", "Rendah", "Cukup Rendah", "Cukup Tinggi", "Tinggi", "Sangat Tinggi"],
         7: ["Sangat Rendah", "Rendah", "Cukup Rendah", "Sedang", "Cukup Tinggi", "Tinggi", "Sangat Tinggi"],
-        8: ["Sangat Rendah", "Rendah", "Cukup Rendah", "Sedang", "Cukup Tinggi", "Tinggi", "Sangat Tinggi", "Eksklusif"],
-        9: ["Sangat Rendah", "Rendah", "Cukup Rendah", "Sedang", "Cukup Tinggi", "Tinggi", "Sangat Tinggi", "Mahal", "Premium"],
-        10: ["Sangat Rendah", "Rendah", "Cukup Rendah", "Sedang", "Cukup Tinggi", "Tinggi", "Sangat Tinggi", "Mahal", "Premium", "Eksklusif"]
     }
-    label_dipakai = label_levels.get(n_clusters, label_levels[10])
+    label_dipakai = label_levels.get(n_clusters, label_levels[7])
 
     # Hitung median tiap cluster
     median_per_cluster = df.groupby("Cluster")[fitur].median()
