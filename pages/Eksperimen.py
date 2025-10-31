@@ -2153,13 +2153,21 @@ with tab3:
         k_ahc = st.slider("Jumlah Cluster (AHC)", 2, 7, 3, key="k_ahc_tab3")
 
     # =====================================================
-    # 🚀 JALANKAN SEMUA METODE
+    # 4️⃣ JALANKAN SEMUA METODE (OTOMATIS)
     # =====================================================
-    st.caption("Semua metode akan dijalankan otomatis: **K-Means**, **AHC**, dan **Intelligent K-Medoids**.")
+    st.caption(
+        "Semua metode akan dijalankan otomatis: **K-Means**, **AHC**, dan **Intelligent K-Medoids**."
+    )
 
     if st.button("🚀 Jalankan Semua Metode", key="run_triple_tab3"):
-        df_base = st.session_state["df_filtered_tab3"]
+        # Ambil data & fitur yang dipilih user
+        df_base = st.session_state.get("df_filtered_tab3")
         fitur = st.session_state.get("fitur_tab3_multiselect", [])
+
+        # 🚨 Validasi ganda: kalau belum pilih fitur
+        if not fitur or len(fitur) == 0:
+            st.error("⚠️ Silakan pilih minimal satu variabel sebelum menjalankan analisis.")
+            st.stop()
 
         metode_k = [
             ("K-Means", k_kmeans),
@@ -2167,28 +2175,33 @@ with tab3:
             ("Intelligent K-Medoids", None)
         ]
 
-        hasil, data = {}, {}
+        hasil = {}
         progress = st.progress(0)
 
+        # Looping semua metode clustering
         for i, (metode, k) in enumerate(metode_k, start=1):
             df_temp = df_base.copy()
             start_time = time.perf_counter()
+
+            # --- Preprocessing ---
             df_temp = clean_data(df_temp, fitur)
             X_scaled = scale_features(df_temp, fitur)
 
+            # --- Jalankan metode ---
             if metode == "K-Means":
                 labels = run_kmeans(X_scaled, k)
             elif metode == "Agglomerative Hierarchical Clustering (AHC)":
                 labels = run_ahc(X_scaled, k)
             else:
-                labels, k_auto, sil = run_intelligent_kmedoids_streamlit(X_scaled)
-                data["k"] = k_auto
+                labels, k_auto, sil_auto = run_intelligent_kmedoids_streamlit(X_scaled)
+                k = k_auto  # ambil hasil cluster otomatis
                 st.info(f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **{k_auto}**")
 
+            # --- Evaluasi hasil ---
             df_temp["Cluster"] = labels
             sil, dbi = evaluate_clusters(X_scaled, labels)
-            end_time = time.perf_counter()
 
+            end_time = time.perf_counter()
             waktu_komputasi = end_time - start_time
             waktu_fmt = f"{waktu_komputasi*1000:.2f} ms" if waktu_komputasi < 1 else f"{waktu_komputasi:.2f} detik"
 
@@ -2201,12 +2214,12 @@ with tab3:
                 "time": waktu_fmt,
                 "X_scaled": X_scaled
             }
+
             progress.progress(i / 3)
 
         progress.empty()
         st.session_state["triple_results"] = hasil
-        st.success("✅ Ketiga metode berhasil dijalankan!")
-
+        st.success("✅ Ketiga metode berhasil dijalankan dengan variabel pilihan user!")
 
     # =====================================================
     # 5️⃣ VISUALISASI HASIL
