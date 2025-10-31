@@ -112,27 +112,28 @@ with tab1:
         key="pilihan_data_tab1_radio"
     )
 
-    # --- Reset antar tab jika mode benar-benar berubah ---
+    # --- Reset logika dataset mode antar tab (tanpa ubah UI tab lain) ---
     if "last_dataset_mode" not in st.session_state:
         st.session_state["last_dataset_mode"] = pilihan_data
     elif st.session_state["last_dataset_mode"] != pilihan_data:
         st.session_state["last_dataset_mode"] = pilihan_data
 
-        # 🚫 Jangan hapus semua state tab lain, cukup tandai dataset berubah
-        st.session_state["dataset_changed"] = True
-        st.rerun()
-    else:
-        st.session_state["dataset_changed"] = False
+        # hapus key spesifik aja, biar gak ngaruh ke UI tab lain
+        st.session_state.pop("upload_tab2_validasi", None)
+        st.session_state.pop("upload_tab3_validasi", None)
+        st.session_state.pop("pilihan_data_tab2_radio", None)
+        st.session_state.pop("pilihan_data_tab3_radio", None)
+        # ⚠️ jangan pakai st.rerun() supaya tab 2 & 3 gak hilang tampilannya
 
 
     # --- Baca file sesuai pilihan ---
     xls = None
+
     if pilihan_data == "Gunakan dataset bawaan":
         try:
             excel_path = "data/Dataset Ready.xlsx"
             xls = pd.ExcelFile(excel_path)
-            st.session_state["sumber_data"] = "default"
-            st.session_state["dataset_changed"] = False
+            st.success("✅ Dataset bawaan berhasil dimuat.")
         except Exception as e:
             st.error(f"❌ Gagal membaca dataset bawaan: {e}")
             st.stop()
@@ -140,24 +141,24 @@ with tab1:
         uploaded_file = st.file_uploader(
             "📂 Unggah file Excel (.xlsx)",
             type=["xlsx"],
-            key="upload_tab1_validasi",
-            on_change=reset_experiment_state
+            key="upload_tab1_validasi"
         )
 
         if uploaded_file:
             try:
                 xls = pd.ExcelFile(uploaded_file)
-                st.session_state["sumber_data"] = "upload"
-                st.session_state["dataset_changed"] = False
+                st.success("✅ Dataset hasil upload berhasil dimuat.")
             except Exception as e:
                 st.error(f"❌ Gagal membaca file Excel: {e}")
         else:
-            st.info("ℹ️ Silakan upload dataset terlebih dahulu.")
-            st.stop()
+            st.info("ℹ️ Silakan upload dataset terlebih dahulu untuk melanjutkan.")
 
-    # 🚦 Berhenti jika dataset belum siap
-    if xls is None:
-        st.stop()
+    # =========================================================
+    # 🚦 Simpan dataset ke session_state biar bisa diakses tab lain
+    # =========================================================
+    if xls is not None:
+        st.session_state["xls"] = xls
+
 
 
 
