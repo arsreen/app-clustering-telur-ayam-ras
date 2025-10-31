@@ -1964,13 +1964,10 @@ with tab3:
                 del st.session_state[key]
 
     # =========================================================
-    # 1️⃣ PILIH SUMBER DATASET (TAB 3) + VALIDASI PER SHEET
+    # 1️⃣ PILIH SUMBER DATASET (TAB 3)
     # =========================================================
-    import io
-    import re
-    import pandas as pd
+    import io, re, pandas as pd
 
-    # Daftar kolom wajib sesuai template
     required_columns = [
         "Kabupaten/Kota",
         "Harga Telur Ayam Ras (Rp)",
@@ -1978,7 +1975,6 @@ with tab3:
         "Pengeluaran Telur Ayam Ras (Rp)"
     ]
 
-    # --- fungsi bantu untuk normalisasi nama kolom ---
     def normalize_column(col):
         col = str(col)
         col = col.encode('utf-8', 'ignore').decode('utf-8')
@@ -1986,16 +1982,12 @@ with tab3:
         col = col.replace('\xa0', ' ').replace('\u200b', '')
         return col.strip().lower()
 
-    # --- fungsi bantu untuk validasi tiap sheet ---
     def validate_sheet_columns(sheet_name, df_sheet):
         cols = [normalize_column(c) for c in df_sheet.columns]
         normalized_required = [normalize_column(c) for c in required_columns]
         missing = [c for c in normalized_required if c not in cols]
         return missing
 
-    # =========================================================
-    # 📂 PILIH SUMBER DATASET
-    # =========================================================
     pilihan_data = st.radio(
         "Pilih sumber dataset:",
         ["Gunakan dataset bawaan", "Upload dataset sendiri"],
@@ -2006,7 +1998,7 @@ with tab3:
     st.markdown("---")
 
     # =========================================================
-    # 🔍 BACA DAN VALIDASI SETIAP SHEET
+    # 🔍 BACA DAN VALIDASI DATA
     # =========================================================
     if pilihan_data == "Gunakan dataset bawaan":
         excel_path = "data/Dataset Ready.xlsx"
@@ -2015,12 +2007,11 @@ with tab3:
         uploaded_file = st.file_uploader(
             "📂 Unggah file Excel (.xlsx)",
             type=["xlsx"],
-            key="upload_tab3_validasi",  # ✅ key unik, beda dari tab 1 & 2
+            key="upload_tab3_validasi",
             on_change=reset_experiment_state_tab3
         )
         if not uploaded_file:
-            st.warning(
-                "⚠️ Silakan upload dataset terlebih dahulu untuk melanjutkan.")
+            st.warning("⚠️ Silakan upload dataset terlebih dahulu untuk melanjutkan.")
             st.stop()
         try:
             xls = pd.ExcelFile(uploaded_file)
@@ -2029,18 +2020,14 @@ with tab3:
             st.stop()
 
     sheet_names = xls.sheet_names
-    df_list = []
-    error_sheets = {}
+    df_list, error_sheets = [], {}
 
-    # Loop tiap sheet & validasi kolom
     for sheet in sheet_names:
         temp = pd.read_excel(xls, sheet_name=sheet, engine="openpyxl")
         missing = validate_sheet_columns(sheet, temp)
-
         if missing:
             missing_display = [
-                required_columns[[normalize_column(
-                    c) for c in required_columns].index(m)]
+                required_columns[[normalize_column(c) for c in required_columns].index(m)]
                 for m in missing
             ]
             error_sheets[sheet] = missing_display
@@ -2051,25 +2038,19 @@ with tab3:
                 temp["Tahun"] = sheet
             df_list.append(temp)
 
-    # =========================================================
-    # 🚨 JIKA ADA SHEET ERROR
-    # =========================================================
     if error_sheets:
-        st.error(
-            "❌ Dataset tidak valid. Beberapa sheet memiliki kolom yang tidak lengkap:")
+        st.error("❌ Dataset tidak valid. Beberapa sheet memiliki kolom yang tidak lengkap:")
         for sheet, missing_cols in error_sheets.items():
-            st.warning(
-                f"📄 Sheet **{sheet}** hilang kolom: {', '.join(missing_cols)}")
+            st.warning(f"📄 Sheet **{sheet}** hilang kolom: {', '.join(missing_cols)}")
 
         st.info("""
-        Pastikan semua sheet memiliki **kolom yang sama** seperti template:
+        Pastikan semua sheet memiliki kolom berikut:
         - Kabupaten/Kota  
         - Harga Telur Ayam Ras (Rp)  
         - Konsumsi Telur Ayam Ras per Kapita  
         - Pengeluaran Telur Ayam Ras (Rp)
         """)
 
-        # tombol download template
         template_df = pd.DataFrame({
             "Kabupaten/Kota": ["KOTA JAKARTA", "KAB. BANDUNG"],
             "Harga Telur Ayam Ras (Rp)": [28000, 27000],
@@ -2089,53 +2070,32 @@ with tab3:
         st.stop()
 
     # =========================================================
-    # ✅ SEMUA SHEET VALID → PILIH RANGE TAHUN
+    # ✅ PILIH RANGE TAHUN
     # =========================================================
     col1, col2 = st.columns(2)
     with col1:
         tahun_dari = st.selectbox(
             "📅 Pilih Tahun Awal:",
-            sheet_names,
-            index=0,
-            key="tahun_dari_tab3",
-            on_change=reset_experiment_state_tab3
+            sheet_names, index=0, key="tahun_dari_tab3", on_change=reset_experiment_state_tab3
         )
     with col2:
         tahun_sampai = st.selectbox(
             "📅 Pilih Tahun Akhir:",
-            sheet_names,
-            index=len(sheet_names) - 1,
-            key="tahun_sampai_tab3",
-            on_change=reset_experiment_state_tab3
+            sheet_names, index=len(sheet_names) - 1, key="tahun_sampai_tab3", on_change=reset_experiment_state_tab3
         )
 
-    # =========================================================
-    # 🚨 ERROR HANDLING: Tahun awal tidak boleh lebih besar
-    # =========================================================
     start_idx = sheet_names.index(tahun_dari)
     end_idx = sheet_names.index(tahun_sampai)
 
     if start_idx > end_idx:
-        st.error(
-            f"⚠️ Tahun awal ({tahun_dari}) tidak boleh lebih besar dari tahun akhir ({tahun_sampai}). "
-            "Silakan periksa kembali urutan tahun yang dipilih."
-        )
-        st.stop()  # hentikan eksekusi agar tidak lanjut ke bawah
+        st.error(f"⚠️ Tahun awal ({tahun_dari}) tidak boleh lebih besar dari tahun akhir ({tahun_sampai}).")
+        st.stop()
 
-    # =========================================================
-    # ✅ Jika valid → proses data
-    # =========================================================
     selected_sheets = sheet_names[start_idx:end_idx + 1]
-
-    # Filter sheet sesuai range tahun
-    df_filtered = [
-        df for df in df_list if str(df["Tahun"].iloc[0]) in selected_sheets
-    ]
+    df_filtered = [df for df in df_list if str(df["Tahun"].iloc[0]) in selected_sheets]
     df = pd.concat(df_filtered, ignore_index=True)
 
-    st.success(
-        f"✅ Semua sheet valid. Data dari tahun {tahun_dari}–{tahun_sampai} berhasil dimuat "
-    )
+    st.success(f"✅ Data dari tahun {tahun_dari}–{tahun_sampai} berhasil dimuat.")
 
     # =========================================================
     # 2️⃣ PILIH VARIABEL UNTUK ANALISIS
@@ -2161,35 +2121,28 @@ with tab3:
         st.warning("⚠️ Minimal pilih satu variabel untuk melanjutkan.")
         st.stop()
 
-    # ✅ Simpan hasil pilihan user
     fitur = selected_features
     st.session_state["fitur_tab3"] = fitur
     st.session_state["df_filtered_tab3"] = df
 
-
-
     # =====================================================
-    # 3️⃣ ATUR JUMLAH CLUSTER UNTUK METODE MANUAL
+    # 3️⃣ ATUR JUMLAH CLUSTER UNTUK SETIAP METODE
     # =====================================================
     st.markdown("### ⚙️ Jumlah Cluster untuk Setiap Metode")
-
     col1, col2 = st.columns(2)
     with col1:
-        k_kmeans = st.slider("Jumlah Cluster (K-Means)",
-                             2, 7, 3, key="k_kmeans_tab3")
+        k_kmeans = st.slider("Jumlah Cluster (K-Means)", 2, 7, 3, key="k_kmeans_tab3")
     with col2:
         k_ahc = st.slider("Jumlah Cluster (AHC)", 2, 7, 3, key="k_ahc_tab3")
 
     # =====================================================
-    # 4️⃣ JALANKAN SEMUA METODE (OTOMATIS)
+    # 4️⃣ JALANKAN SEMUA METODE
     # =====================================================
-    st.caption(
-        "Semua metode akan dijalankan otomatis: **K-Means**, **AHC**, dan **Intelligent K-Medoids**."
-    )
+    st.caption("Semua metode akan dijalankan otomatis: **K-Means**, **AHC**, dan **Intelligent K-Medoids**.")
 
     if st.button("🚀 Jalankan Semua Metode", key="run_triple_tab3"):
         df_base = st.session_state["df_filtered_tab3"]
-        fitur = st.session_state.get("fitur_tab3", [])  # ✅ benerin ini
+        fitur = st.session_state.get("fitur_tab3", [])  # ✅ fix utama
 
         metode_k = [
             ("K-Means", k_kmeans),
@@ -2197,8 +2150,7 @@ with tab3:
             ("Intelligent K-Medoids", None)
         ]
 
-        hasil = {}
-        data = {}  # ✅ tambahkan inisialisasi biar gak NameError
+        hasil, data = {}, {}
         progress = st.progress(0)
 
         for i, (metode, k) in enumerate(metode_k, start=1):
@@ -2213,10 +2165,8 @@ with tab3:
                 labels = run_ahc(X_scaled, k)
             else:
                 labels, k_auto, sil = run_intelligent_kmedoids_streamlit(X_scaled)
-                data["k"] = k_auto  # ✅ simpan hasil cluster otomatis
-                st.info(
-                    f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **{k_auto}**"
-                )
+                data["k"] = k_auto
+                st.info(f"🤖 Jumlah cluster optimal hasil Intelligent K-Medoids: **{k_auto}**")
 
             df_temp["Cluster"] = labels
             sil, dbi = evaluate_clusters(X_scaled, labels)
@@ -2249,6 +2199,7 @@ with tab3:
 
         st.markdown("---")
         st.subheader("📊 Hasil Evaluasi Perbandingan")
+
         for metode, data in hasil.items():
             st.markdown(f"#### 🧩 {metode}")
             col1, col2, col3 = st.columns(3)
@@ -2256,8 +2207,11 @@ with tab3:
             col2.metric("Davies–Bouldin Index", f"{data['dbi']:.3f}")
             col3.metric("Waktu Komputasi", data["time"])
 
+        st.markdown("---")
+        st.success("✅ Semua hasil sudah diperbarui sesuai variabel pilihan pengguna.")
+
         # =====================================================
-        # 6️⃣ TAB VISUALISASI (URUTAN SAMA SEPERTI TAB1 & TAB2)
+        # 6️⃣ TAB VISUALISASI (SAMA SEPERTI TAB 1 & TAB 2)
         # =====================================================
         tabA, tabB, tabC, tabD = st.tabs([
             "📦 Boxplot & Peta",
@@ -2271,9 +2225,8 @@ with tab3:
             st.markdown("### 📦 Distribusi Nilai & Peta per Metode")
             from modules.interpretasi import interpretasi_untuk_legend_otomatis
             import seaborn as sns
-            import matplotlib.colors as mcolors
-            import leafmap.foliumap as leafmap
             import geopandas as gpd
+            import leafmap.foliumap as leafmap
             import folium
 
             custom_palette = [
@@ -2323,6 +2276,7 @@ with tab3:
                         st.pyplot(fig)
                         plt.close(fig)
 
+                # === LEGEND CLUSTER ===
                 legend_items = []
                 for j, cluster_id in enumerate(sorted(df_box["Cluster"].unique())):
                     color = cluster_palette_hex[j % len(cluster_palette_hex)]
@@ -2362,15 +2316,12 @@ with tab3:
                         .str.strip().str.upper()
                     )
                     df_map["Kabupaten/Kota"] = (
-                        df_map["Kabupaten/Kota"].str.replace(
-                            "KABUPATEN", "", case=False)
+                        df_map["Kabupaten/Kota"].str.replace("KABUPATEN", "", case=False)
                         .str.replace("KOTA", "", case=False)
                         .str.strip().str.upper()
                     )
-                    cols_merge = ["Kabupaten/Kota", "Cluster"] + \
-                        [c for c in fitur if c in df_map.columns]
-                    gdf = gdf.merge(
-                        df_map[cols_merge], left_on="NAME_2", right_on="Kabupaten/Kota", how="left")
+                    cols_merge = ["Kabupaten/Kota", "Cluster"] + [c for c in fitur if c in df_map.columns]
+                    gdf = gdf.merge(df_map[cols_merge], left_on="NAME_2", right_on="Kabupaten/Kota", how="left")
                     return gdf
 
                 gdf = merge_data_for_map(df_box, fitur)
@@ -2380,9 +2331,6 @@ with tab3:
                         return "<b>Tidak Ada Data</b>"
 
                     nama = str(row["Kabupaten/Kota"]).title().strip()
-                    if not nama.startswith("Kota"):
-                        nama = f"{nama}"
-
                     cluster_val = row["Cluster"]
                     teks = f"<b>{nama}</b><br><b>Cluster:</b> {int(cluster_val)}<hr style='margin:3px 0;'>"
 
@@ -2399,9 +2347,7 @@ with tab3:
                 m = leafmap.Map(center=[-2.5, 118], zoom=5)
                 m.add_basemap("CartoDB.Positron")
 
-                from folium import GeoJson, GeoJsonTooltip
-
-                geo_layer = GeoJson(
+                geo_layer = folium.GeoJson(
                     gdf[["geometry", "Cluster", "info"]],
                     name="Peta Cluster",
                     style_function=lambda x: {
@@ -2415,438 +2361,95 @@ with tab3:
                         "opacity": 0.6,
                         "fillOpacity": 0.9,
                     },
-                    tooltip=GeoJsonTooltip(
-                        fields=["info"],
-                        aliases=[""],
-                        labels=False,
-                        sticky=True,
-                        style=(
-                            "background-color: rgba(255,255,255,0.95); "
-                            "color: #222; font-size: 12px; "
-                            "font-family: Arial; border-radius: 4px; "
-                            "padding: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
-                        ),
-                    ),
+                    tooltip=folium.GeoJsonTooltip(fields=["info"], aliases=[""], labels=False, sticky=True)
                 )
 
                 m.add_layer(geo_layer)
                 m.to_streamlit(height=550)
 
-                # ======================================================
-                # 🧭 INTERPRETASI CLUSTER
-                # ======================================================
-                auto_labels = interpretasi_untuk_legend_otomatis(df_box, fitur)
-                st.markdown("### Interpretasi Cluster")
-
-                for cluster in sorted(auto_labels.keys()):
-                    color = cluster_colors.get(
-                        cluster, list(cluster_colors.values())[0])
-                    label = auto_labels[cluster]
-                    st.markdown(
-                        f"""
-                        <div style='display:flex; align-items:center; gap:8px; margin-bottom:6px;'>
-                            <div style='width:16px; height:16px; background-color:{color};
-                                        border-radius:3px; flex-shrink:0;'></div>
-                            <div style='font-size:14px; color:#333; line-height:1.4;'>
-                                <b>Cluster {cluster} :</b> {label}
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                # =======================================================
-                # 📋 TABEL & 📊 GRAFIK JUMLAH KABUPATEN/KOTA PER CLUSTER (DOMINAN, FIX AKURAT)
-                # =======================================================
-                with st.spinner("📋 Menyiapkan Daftar Kabupaten/Kota..."):
-
-                    # Pastikan kolom Cluster tersedia
-                    if "Cluster" not in df_box.columns:
-                        st.warning("⚠️ Kolom **Cluster** belum tersedia. Jalankan proses clustering terlebih dahulu.")
-                    else:
-                        # 1️⃣ Hitung cluster dominan (mode) tiap kabupaten/kota di seluruh tahun
-                        def ambil_cluster_dominan(series_cluster):
-                            mode_val = series_cluster.mode()
-                            if not mode_val.empty:
-                                return mode_val.iloc[0]
-                            else:
-                                return series_cluster.iloc[-1]  # fallback ke cluster terakhir
-
-                        df_cluster_list = (
-                            df_box.groupby("Kabupaten/Kota")["Cluster"]
-                            .apply(ambil_cluster_dominan)
-                            .reset_index(name="Cluster")  # hasil jadi DataFrame dengan kolom Cluster
-                            .sort_values(by="Cluster")
-                            .reset_index(drop=True)
-                        )
-
-                        # Format nama kabupaten/kota agar rapi
-                        def format_nama(nama):
-                            nama = nama.strip().upper()
-                            return nama.title()
-
-                        df_cluster_list["Kabupaten/Kota"] = df_cluster_list["Kabupaten/Kota"].apply(format_nama)
-
-                        # =======================================================
-                        # 📊 TABEL & GRAFIK BERDAMPINGAN
-                        # =======================================================
-                        col1, col2 = st.columns([1.0, 1.3])
-
-                        with col1:
-                            st.markdown("### 📋 Daftar Kabupaten/Kota Berdasarkan Cluster")
-                            st.dataframe(
-                                df_cluster_list,
-                                use_container_width=False,
-                                width=380,
-                                hide_index=True
-                            )
-
-                        with col2:
-                            # =======================================================
-                            # 📊 JUMLAH KABUPATEN/KOTA PER CLUSTER
-                            # =======================================================
-                            cluster_counts = (
-                                df_cluster_list.groupby("Cluster")["Kabupaten/Kota"]
-                                .count()
-                                .reset_index()
-                                .rename(columns={"Kabupaten/Kota": "Jumlah_KabKota"})
-                                .sort_values(by="Cluster", ascending=True)
-                            )
-
-                            # Warna batang disamakan dengan warna cluster di boxplot/peta
-                            cluster_colors_list = [
-                                cluster_colors.get(c, "#999999") for c in cluster_counts["Cluster"]
-                            ]
-
-                            st.markdown("### 📊 Jumlah Kabupaten/Kota pada Tiap Cluster")
-
-                            fig, ax = plt.subplots(figsize=(4.8, 3.3))
-                            sns.barplot(
-                                x="Cluster",
-                                y="Jumlah_KabKota",
-                                data=cluster_counts,
-                                palette=cluster_colors_list,
-                                ax=ax
-                            )
-
-                            # Tambahkan judul langsung di atas plot
-                            ax.set_title("Distribusi Jumlah Kabupaten/Kota per Cluster",
-                                        fontsize=12, fontweight="bold", pad=10)
-
-                            # Tambahkan label di atas batang
-                            for container in ax.containers:
-                                ax.bar_label(
-                                    container, fmt="%d", label_type="edge", fontsize=9, padding=2, color="#222"
-                                )
-
-                            ymax = cluster_counts["Jumlah_KabKota"].max()
-                            ax.set_ylim(0, ymax * 1.15)
-                            ax.set_xlabel("Cluster", fontsize=11)
-                            ax.set_ylabel("Jumlah Kab/Kota", fontsize=11)
-                            ax.grid(True, axis="y", linestyle="--", alpha=0.3)
-                            plt.tight_layout()
-                            st.pyplot(fig)
-                            plt.close(fig)
-
-                        st.markdown("---")
-
-
-        # === TREN (SAMA DENGAN TAB1 LOGIKA) ===
+        # =====================================================
+        # TAB B: TREN TAHUNAN
+        # =====================================================
         with tabB:
-            tahun_unik = df["Tahun"].unique()
-            n_tahun = len(tahun_unik)
+            st.markdown("### 📊 Tren Tahunan Variabel Terpilih")
+            tahun_unik = sorted(df["Tahun"].unique())
+            if len(tahun_unik) > 1:
+                df_trend = df[["Tahun"] + fitur].groupby("Tahun").agg(["max", "min", "mean"]).round(2)
+                df_trend.columns = ["_".join(col) for col in df_trend.columns]
+                df_trend = df_trend.reset_index()
 
-            if n_tahun > 1:
-                # =================================================
-                # MODE: GRAFIK TREN (multi-year)
-                # =================================================
-                st.markdown("### 📊 Tren Tahunan Setiap Variabel")
-                st.markdown(
-                    "Analisis tren maksimum, minimum, dan rata-rata untuk tiap variabel dari tahun yang tersedia.")
+                fig, axes = plt.subplots(1, len(fitur), figsize=(5*len(fitur), 3))
+                if len(fitur) == 1:
+                    axes = [axes]
 
-                with st.spinner("🔄 Menghitung tren tahunan..."):
-                    # Pastikan kolom Tahun numerik
-                    df["Tahun"] = pd.to_numeric(df["Tahun"], errors="coerce")
+                for i, var in enumerate(fitur):
+                    ax = axes[i]
+                    tahun = df_trend["Tahun"].astype(str)
+                    ax.plot(tahun, df_trend[f"{var}_max"], marker="^", color="blue", label="Maksimum")
+                    ax.plot(tahun, df_trend[f"{var}_min"], marker="v", color="red", label="Minimum")
+                    ax.plot(tahun, df_trend[f"{var}_mean"], marker="o", color="green", label="Rata-rata")
+                    ax.set_title(var)
+                    ax.set_xlabel("Tahun")
+                    ax.grid(True, linestyle="--", alpha=0.3)
 
-                    # Pilih kolom yang dipakai
-                    df_trend = df[["Tahun"] + fitur].copy()
-
-                    # Hitung statistik tahunan (max, min, mean)
-                    stats = df_trend.groupby("Tahun").agg(
-                        ["max", "min", "mean"]).round(2)
-                    stats.columns = ["_".join(col) for col in stats.columns]
-                    stats = stats.reset_index()
-
-                    # Ubah kolom Tahun jadi string supaya rapi di sumbu X
-                    stats["Tahun"] = stats["Tahun"].astype(str)
-
-                    # Buat subplot dinamis sesuai jumlah variabel
-                    n_vars = len(fitur)
-                    fig, axes = plt.subplots(1, n_vars, figsize=(5*n_vars, 3))
-                    if n_vars == 1:
-                        axes = [axes]
-
-                    for i, var in enumerate(fitur):
-                        ax = axes[i]
-                        tahun_str = stats["Tahun"]
-
-                        ax.plot(
-                            tahun_str, stats[f"{var}_max"], marker="^", color="blue", label="Maksimum")
-                        ax.plot(
-                            tahun_str, stats[f"{var}_min"], marker="v", color="red", label="Minimum")
-                        ax.plot(
-                            tahun_str, stats[f"{var}_mean"], marker="o", color="green", label="Rata-rata")
-
-                        ax.set_title(f"({chr(97+i)}) Tren {var}",
-                                     fontsize=12, fontweight="bold")
-                        ax.set_xlabel("Tahun")
-                        ax.set_ylabel(var)
-                        ax.grid(True, axis="y", linestyle="--", alpha=0.3)
-                        ax.set_xticks(range(len(tahun_str)))
-                        ax.set_xticklabels(tahun_str)
-
-                    # ✅ Legend di luar plot (bawah semua subplot)
-                    fig.legend(
-                        labels=["Maksimum", "Minimum", "Rata-rata"],
-                        loc="lower center",
-                        ncol=3,
-                        frameon=False,
-                        fontsize=9
-                    )
-
-                    plt.tight_layout(rect=[0, 0.05, 1, 0.95])
-                    st.pyplot(fig)
-
-                st.success("✅ Grafik tren tahunan selesai dibuat!")
-
+                fig.legend(labels=["Maksimum", "Minimum", "Rata-rata"], loc="lower center", ncol=3)
+                plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+                st.pyplot(fig)
             else:
-                # =================================================
-                # MODE: PROFIL SATU TAHUN (single-year)
-                # =================================================
-                tahun_terpilih = int(tahun_unik[0])
-                st.markdown(f"### 📊 Profil Variabel Tahun {tahun_terpilih}")
-                st.markdown(
-                    "Menampilkan nilai minimum, rata-rata, dan maksimum untuk setiap variabel di tahun ini.")
-
-                # Hitung statistik ringkas
-                stats_single = df[fitur].describe(
-                ).T[["min", "mean", "max"]].round(2)
-                stats_single.columns = ["Minimum", "Rata-rata", "Maksimum"]
-
-                st.dataframe(stats_single.style.format("{:.2f}"))
-                st.success(
-                    f"✅ Ringkasan variabel untuk tahun {tahun_terpilih} berhasil ditampilkan.")
-
-            # =====================================================
-            # 🏆 TAMBAHAN: DASHBOARD GAYA "TOP STATES" UNTUK TOP 10
-            # =====================================================
-            import matplotlib.cm as cm
-
-            st.markdown("---")
-            st.markdown(
-                "### 🏆 Top 10 Kabupaten/Kota Tertinggi dan Terendah per Variabel (Visual Dashboard)")
-
-            if "Kabupaten/Kota" in df.columns:
-                for var in fitur:
-                    st.markdown(f"#### 📊 {var}")
-                    with st.spinner(f"Menghitung peringkat untuk {var}..."):
-                        df_sorted = df[["Kabupaten/Kota", var,
-                                        "Tahun"]].dropna(subset=[var])
-                        df_mean = (
-                            df_sorted.groupby("Kabupaten/Kota")[var]
-                            .mean()
-                            .reset_index()
-                            .sort_values(by=var, ascending=False)
-                        )
-
-                        # ✅ Tambahkan "Kabupaten" di depan kalau belum ada kata "Kota"
-                        def format_nama(nama):
-                            nama = nama.strip().title()
-                            if not nama.lower().startswith("kota"):
-                                return f"Kabupaten {nama}"
-                            return nama
-
-                        df_mean["Kabupaten/Kota"] = df_mean["Kabupaten/Kota"].apply(
-                            format_nama)
-
-                        top10_high = df_mean.head(10).reset_index(drop=True)
-                        top10_low = df_mean.tail(10).sort_values(
-                            by=var, ascending=True).reset_index(drop=True)
-
-                        col1, col2 = st.columns(2)
-
-                        # === TERTINGGI ===
-                        with col1:
-                            st.markdown("**🔺 Top 10 Tertinggi**")
-                            max_val = top10_high[var].max()
-                            for _, row in top10_high.iterrows():
-                                bar_val = row[var] / max_val
-                                st.markdown(
-                                    f"""
-                                    <div style='margin-bottom:20px;'>  <!-- ✅ jarak antar bar -->
-                                        <div style='display:flex; justify-content:space-between;'>
-                                            <span style='font-weight:600;'>{row["Kabupaten/Kota"]}</span>
-                                            <span style='font-weight:500;'>{row[var]:,.2f}</span>
-                                        </div>
-                                        <div style='background-color:#333; border-radius:5px; height:10px; margin-top:3px;'>
-                                            <div style='background:linear-gradient(90deg, #ff4b5c, #ff8fa3); width:{bar_val*100:.1f}%; height:10px; border-radius:5px;'></div>
-                                        </div>
-                                    </div>
-                                    """,
-                                    unsafe_allow_html=True
-                                )
-
-                        # === TERENDAH ===
-                        with col2:
-                            st.markdown("**🔻 Top 10 Terendah**")
-                            max_val = top10_low[var].max()
-                            for _, row in top10_low.iterrows():
-                                bar_val = row[var] / max_val
-                                st.markdown(
-                                    f"""
-                                    <div style='margin-bottom:20px;'>  <!-- ✅ jarak antar bar -->
-                                        <div style='display:flex; justify-content:space-between;'>
-                                            <span style='font-weight:600;'>{row["Kabupaten/Kota"]}</span>
-                                            <span style='font-weight:500;'>{row[var]:,.2f}</span>
-                                        </div>
-                                        <div style='background-color:#333; border-radius:5px; height:10px; margin-top:3px;'>
-                                            <div style='background:linear-gradient(90deg, #74b9ff, #a0c4ff); width:{bar_val*100:.1f}%; height:10px; border-radius:5px;'></div>
-                                        </div>
-                                    </div>
-                                    """,
-                                    unsafe_allow_html=True
-                                )
-
-                st.success(
-                    "✅ Visualisasi gaya 'Top States' berhasil ditampilkan!")
-            else:
-                st.warning(
-                    "⚠️ Kolom 'Kabupaten/Kota' tidak ditemukan dalam dataset.")
+                st.info("⚠️ Dataset hanya memiliki satu tahun, tidak ada tren tahunan yang bisa divisualisasikan.")
 
         # =====================================================
-        # 📈 TAB C: SILHOUETTE PLOT (TIGA METODE)
+        # TAB C: SILHOUETTE PLOT
         # =====================================================
         with tabC:
             st.markdown("### 📈 Silhouette Plot per Metode")
-            with st.spinner("🔄 Membuat Silhouette Plot..."):
-                n_methods = len(hasil)
-                n_cols = 3 if n_methods >= 3 else 2
-                cols = st.columns(n_cols)
+            n_cols = min(3, len(hasil))
+            cols = st.columns(n_cols)
+            for i, (metode, data) in enumerate(hasil.items()):
+                with cols[i % n_cols]:
+                    X_scaled = data["X_scaled"]
+                    labels = data["labels"]
+                    sil_val = data["sil"]
+                    k_val = data["k"]
 
-                for i, (metode, data) in enumerate(hasil.items()):
-                    with cols[i % n_cols]:
-                        X_scaled = data.get("X_scaled")
-                        labels = data.get("labels")
-                        sil_val = data.get("sil")
-                        k_val = data.get("k")
+                    if X_scaled is None or labels is None:
+                        st.warning(f"⚠️ Data {metode} tidak lengkap.")
+                        continue
 
-                        # --- Cegah error kalau ada data kosong ---
-                        if X_scaled is None or labels is None:
-                            st.warning(f"⚠️ Data untuk {metode} belum lengkap.")
-                            continue
+                    if k_val is None or not isinstance(k_val, int):
+                        k_val = len(np.unique(labels))
 
-                        # --- Kalau 'k' belum terset, hitung otomatis dari label unik ---
-                        if k_val is None or not isinstance(k_val, int):
-                            k_val = len(np.unique(labels))
-                            data["k"] = k_val
-
-                        # --- Buat plot silhouette ---
-                        fig, ax = plt.subplots(figsize=(6, 4))
-                        silhouette_vals = silhouette_samples(X_scaled, labels)
-                        y_lower, y_upper = 0, 0
-                        yticks = []
-
-                        # ✅ ubah 'c' jadi 'cluster_id' biar gak warning
-                        for cluster_id in range(k_val):
-                            cluster_sil_vals = silhouette_vals[labels == cluster_id]
-                            cluster_sil_vals.sort()
-                            y_upper += len(cluster_sil_vals)
-                            ax.barh(range(y_lower, y_upper), cluster_sil_vals, height=1.0)
-                            yticks.append((y_lower + y_upper) / 2)
-                            y_lower += len(cluster_sil_vals)
-
-                        # --- Garis rata-rata silhouette ---
-                        if sil_val is not None:
-                            ax.axvline(sil_val, color="red", linestyle="--", label="Rata-rata Silhouette")
-
-                        # --- Gaya visualisasi ---
-                        ax.set_yticks(yticks)
-                        ax.set_yticklabels(range(k_val))
-                        ax.set_xlabel("Silhouette Coefficient")
-                        ax.set_ylabel("Cluster")
-                        ax.set_title(f"{metode}", fontsize=11, fontweight="bold")
-                        ax.legend(loc="lower right")
-                        ax.grid(True, linestyle="--", alpha=0.3)
-
-                        plt.tight_layout()
-                        st.pyplot(fig)
-                        plt.close(fig)
-
-            st.success("✅ Silhouette plot selesai dibuat!")
-
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    sil_samples = silhouette_samples(X_scaled, labels)
+                    y_lower = 0
+                    for c in range(k_val):
+                        sil_vals = sil_samples[labels == c]
+                        sil_vals.sort()
+                        y_upper = y_lower + len(sil_vals)
+                        ax.barh(range(y_lower, y_upper), sil_vals, height=1.0)
+                        y_lower = y_upper
+                    ax.axvline(sil_val, color="red", linestyle="--", label="Rata-rata Silhouette")
+                    ax.set_title(metode)
+                    ax.legend()
+                    st.pyplot(fig)
+                    plt.close(fig)
 
         # =====================================================
-        # TAB D: SCATTER PER VARIABEL (LAYOUT HORIZONTAL PER METODE)
+        # TAB D: SCATTER PLOT
         # =====================================================
         with tabD:
             st.markdown("### 🎯 Scatter Plot per Variabel")
-            st.caption(
-                "Menampilkan hubungan antar tahun dan distribusi tiap variabel dalam satu baris per metode.")
-
-            with st.spinner("🔄 Menyiapkan Scatter Plot..."):
-                for metode, data in hasil.items():
-                    st.markdown(f"## 🧩 {metode}")
-                    df_plot = data["df"].copy()
-                    df_plot["Tahun"] = df_plot["Tahun"].astype(int)
-                    n_tahun = df_plot["Tahun"].nunique()
-                    n_vars = len(fitur)
-
-                    if n_tahun > 1:
-                        # === Susun variabel horizontal ===
-                        variabels = [(f"({chr(97+i)}) {var}", var)
-                                     for i, var in enumerate(fitur)]
-                        cols = st.columns(len(variabels))
-
-                        for i, (judul, var) in enumerate(variabels):
-                            with cols[i]:
-                                df_pivot = df_plot.pivot_table(
-                                    index="Kabupaten/Kota",
-                                    columns="Tahun",
-                                    values=var,
-                                    aggfunc="mean"
-                                )
-                                tahun_unik = sorted(df_plot["Tahun"].unique())
-                                df_pivot = df_pivot.reindex(columns=tahun_unik)
-                                df_pivot["Cluster"] = (
-                                    df_plot.groupby(
-                                        "Kabupaten/Kota")["Cluster"]
-                                    .first()
-                                    .reindex(df_pivot.index)
-                                )
-
-                                # === PairGrid setup ===
-                                g = sns.PairGrid(
-                                    df_pivot, hue="Cluster", palette="husl", height=2.4)
-                                g.map_lower(sns.scatterplot, s=35,
-                                            edgecolor="k", linewidth=0.3)
-                                g.map_upper(
-                                    sns.scatterplot, s=35, edgecolor="k", linewidth=0.3, alpha=0.6)
-                                g.map_diag(sns.kdeplot, fill=True, alpha=0.6)
-
-                                # === Styling ===
-                                g.fig.suptitle(
-                                    judul, y=1.03, fontsize=11, fontweight="bold")
-                                plt.tight_layout()
-                                st.pyplot(g.fig)
-                                plt.close(g.fig)
-
-                        st.divider()  # garis pemisah antar metode
-
-                    else:
-                        st.info(f"""
-                        ⚠️ **Scatter plot tidak ditampilkan untuk {metode}.**  
-                        Dataset hanya memiliki **satu tahun data**, sehingga tidak ada hubungan antar tahun yang dapat divisualisasikan.  
-                        Silakan lihat *boxplot* atau *peta* untuk distribusi cluster.
-                        """)
-
-                st.success("✅ Scatter plot semua metode selesai dibuat!")
+            for metode, data in hasil.items():
+                st.markdown(f"## 🧩 {metode}")
+                df_plot = data["df"].copy()
+                tahun_unik = sorted(df_plot["Tahun"].unique())
+                if len(tahun_unik) > 1:
+                    cols = st.columns(len(fitur))
+                    for i, var in enumerate(fitur):
+                        with cols[i]:
+                            sns.scatterplot(data=df_plot, x="Tahun", y=var, hue="Cluster", palette="husl")
+                            plt.title(var)
+                            st.pyplot(plt.gcf())
+                            plt.close()
+                else:
+                    st.info(f"⚠️ {metode}: hanya 1 tahun data, scatter tidak ditampilkan.")
