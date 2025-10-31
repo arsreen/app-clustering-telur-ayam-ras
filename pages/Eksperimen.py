@@ -740,6 +740,23 @@ with tab1:
                     st.pyplot(fig)
                     plt.close(fig)
 
+                    # =======================================================
+                    # 🎨 LEGENDAR WARNA (SAMA DENGAN BOX PLOT/PETA)
+                    # =======================================================
+                    legend_html = "".join([
+                        f"<span style='display:inline-flex; align-items:center; gap:5px; margin-right:10px;'>"
+                        f"<span style='width:14px; height:14px; background-color:{cluster_colors.get(c)}; "
+                        f"border-radius:3px; display:inline-block;'></span>"
+                        f"<span style='font-size:13px; color:#333;'>Cluster {c}</span>"
+                        f"</span>"
+                        for c in sorted(cluster_colors.keys())
+                    ])
+
+                    st.markdown(
+                        f"<div style='text-align:center; margin-top:6px; display:flex; justify-content:center; flex-wrap:wrap; gap:10px;'>{legend_html}</div>",
+                        unsafe_allow_html=True
+                    )
+
         # =====================================================
         # TAB 2: TRENDS (ADAPTIF)
         # =====================================================
@@ -1548,7 +1565,7 @@ with tab2:
                                 )
 
                         # =======================================================
-                        # 📋 TABEL & 📊 GRAFIK JUMLAH KABUPATEN/KOTA PER CLUSTER (DOMINAN, FIX AKURAT)
+                        # 📋 TABEL & 📊 GRAFIK JUMLAH KABUPATEN/KOTA PER CLUSTER 
                         # =======================================================
                         with st.spinner("📋 Menyiapkan Daftar Kabupaten/Kota..."):
 
@@ -1640,18 +1657,6 @@ with tab2:
                                     st.pyplot(fig)
                                     plt.close(fig)
 
-
-                                # =======================================================
-                                # 🎨 LEGENDAR WARNA (SAMA DENGAN BOX PLOT/PETA)
-                                # =======================================================
-                                legend_html = "".join([
-                                    f"<span style='display:inline-flex; align-items:center; gap:5px; margin-right:10px;'>"
-                                    f"<span style='width:14px; height:14px; background-color:{cluster_colors.get(c)}; "
-                                    f"border-radius:3px; display:inline-block;'></span>"
-                                    f"<span style='font-size:13px; color:#333;'>Cluster {c}</span>"
-                                    f"</span>"
-                                    for c in sorted(cluster_colors.keys())
-                                ])
 
                                 st.markdown(
                                     f"<div style='text-align:center; margin-top:6px; display:flex; justify-content:center; flex-wrap:wrap; gap:10px;'>{legend_html}</div>",
