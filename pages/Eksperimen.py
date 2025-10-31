@@ -2161,9 +2161,11 @@ with tab3:
         st.warning("⚠️ Minimal pilih satu variabel untuk melanjutkan.")
         st.stop()
 
-    # ✅ Cukup pakai hasil langsung dari widget
+    # ✅ Simpan hasil pilihan user
     fitur = selected_features
+    st.session_state["fitur_tab3"] = fitur
     st.session_state["df_filtered_tab3"] = df
+
 
 
     # =====================================================
@@ -2187,7 +2189,7 @@ with tab3:
 
     if st.button("🚀 Jalankan Semua Metode", key="run_triple_tab3"):
         df_base = st.session_state["df_filtered_tab3"]
-        fitur = st.session_state["fitur_tab3"]
+        fitur = st.session_state.get("fitur_tab3", [])  # ✅ benerin ini
 
         metode_k = [
             ("K-Means", k_kmeans),
@@ -2219,7 +2221,6 @@ with tab3:
             df_temp["Cluster"] = labels
             sil, dbi = evaluate_clusters(X_scaled, labels)
             end_time = time.perf_counter()
-
 
             waktu_komputasi = end_time - start_time
             waktu_fmt = f"{waktu_komputasi*1000:.2f} ms" if waktu_komputasi < 1 else f"{waktu_komputasi:.2f} detik"
