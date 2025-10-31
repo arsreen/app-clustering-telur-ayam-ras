@@ -1657,12 +1657,6 @@ with tab2:
                                     st.pyplot(fig)
                                     plt.close(fig)
 
-
-                                st.markdown(
-                                    f"<div style='text-align:center; margin-top:6px; display:flex; justify-content:center; flex-wrap:wrap; gap:10px;'>{legend_html}</div>",
-                                    unsafe_allow_html=True
-                                )
-
                 st.success("✅ Boxplot & Peta selesai dibuat!")
 
             # =====================================================
