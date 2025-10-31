@@ -112,28 +112,30 @@ with tab1:
         key="pilihan_data_tab1_radio"
     )
 
-        # 🔁 RESET TAB 2 & TAB 3 JIKA MODE DIGANTI
+    # --- Reset antar tab jika mode benar-benar berubah ---
     if "last_dataset_mode" not in st.session_state:
         st.session_state["last_dataset_mode"] = pilihan_data
     elif st.session_state["last_dataset_mode"] != pilihan_data:
         st.session_state["last_dataset_mode"] = pilihan_data
-        st.session_state.pop("upload_tab2_validasi", None)
-        st.session_state.pop("upload_tab3_validasi", None)
-        st.session_state.pop("pilihan_data_tab2_radio", None)
-        st.session_state.pop("pilihan_data_tab3_radio", None)
+
+        # 🚫 Jangan hapus semua state tab lain, cukup tandai dataset berubah
+        st.session_state["dataset_changed"] = True
         st.rerun()
+    else:
+        st.session_state["dataset_changed"] = False
+
 
     # --- Baca file sesuai pilihan ---
-    xls = None  # siapkan variabel default
-
+    xls = None
     if pilihan_data == "Gunakan dataset bawaan":
         try:
             excel_path = "data/Dataset Ready.xlsx"
             xls = pd.ExcelFile(excel_path)
+            st.session_state["sumber_data"] = "default"
+            st.session_state["dataset_changed"] = False
         except Exception as e:
             st.error(f"❌ Gagal membaca dataset bawaan: {e}")
             st.stop()
-
     else:
         uploaded_file = st.file_uploader(
             "📂 Unggah file Excel (.xlsx)",
@@ -142,21 +144,21 @@ with tab1:
             on_change=reset_experiment_state
         )
 
-        # ⛔ Jangan hentikan seluruh tab kalau belum upload
-        if not uploaded_file:
-            st.info("ℹ️ Silakan upload dataset terlebih dahulu untuk melanjutkan analisis di tab ini.")
-        else:
+        if uploaded_file:
             try:
                 xls = pd.ExcelFile(uploaded_file)
+                st.session_state["sumber_data"] = "upload"
+                st.session_state["dataset_changed"] = False
             except Exception as e:
                 st.error(f"❌ Gagal membaca file Excel: {e}")
-                xls = None
+        else:
+            st.info("ℹ️ Silakan upload dataset terlebih dahulu.")
+            st.stop()
 
-    # =========================================================
-    # 🚦 Cek apakah file sudah siap
-    # =========================================================
+    # 🚦 Berhenti jika dataset belum siap
     if xls is None:
         st.stop()
+
 
 
     # =========================================================
@@ -1656,6 +1658,12 @@ with tab2:
                                     plt.tight_layout()
                                     st.pyplot(fig)
                                     plt.close(fig)
+
+
+                                # st.markdown(
+                                #     f"<div style='text-align:center; margin-top:6px; display:flex; justify-content:center; flex-wrap:wrap; gap:10px;'>{legend_html}</div>",
+                                #     unsafe_allow_html=True
+                                # )
 
                 st.success("✅ Boxplot & Peta selesai dibuat!")
 
