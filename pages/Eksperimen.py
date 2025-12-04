@@ -959,7 +959,45 @@ with tab1:
                 ax1.set_title(f"Silhouette Plot ({metode})", fontsize=13)
 
                 st.pyplot(fig_sil)
+
+            # =====================================================
+            # 💬 INTERPRETASI OTOMATIS NILAI SILHOUETTE
+            # =====================================================
+            if sil >= 0.7:
+                kategori = "Sangat Baik 👍"
+                deskripsi = "Struktur cluster sangat jelas dan terpisah dengan baik. Mayoritas data berada di cluster yang tepat."
+            elif sil >= 0.5:
+                kategori = "Baik ✅"
+                deskripsi = "Cluster sudah cukup terpisah dan kompak, meskipun masih ada sebagian data di batas antar cluster."
+            elif sil >= 0.3:
+                kategori = "Sedang ⚙️"
+                deskripsi = "Kualitas cluster masih bisa ditingkatkan. Sebagian data mungkin belum sepenuhnya sesuai dengan cluster-nya."
+            else:
+                kategori = "Kurang Baik ⚠️"
+                deskripsi = "Cluster tumpang tindih dan tidak terpisah jelas. Disarankan meninjau kembali jumlah cluster (k) atau metode yang digunakan."
+
+            st.markdown(f"""
+            ### 🧮 Hasil Evaluasi
+            **Nilai Silhouette Average:** `{sil:.3f}`  
+            **Kategori Evaluasi:** {kategori}  
+            {deskripsi}
+            """)
+
+            # 📘 Expander Penjelasan
+            with st.expander("📘 Penjelasan Lengkap tentang Silhouette Score"):
+                st.markdown("""
+                - Nilai **Silhouette Coefficient** berkisar antara **-1 hingga 1**.  
+                - Nilai **> 0.7** → hasil klasterisasi sangat baik (*strong structure*).  
+                - Nilai **0.5–0.7** → cukup baik (*reasonable separation*).  
+                - Nilai **0.3–0.5** → sedang (*moderate separation*).  
+                - Nilai **< 0.3** → kurang baik (*weak structure*).  
+
+                Nilai ini menggambarkan keseimbangan antara *tightness* (kekompakan dalam cluster)  
+                dan *separation* (jarak antar cluster). Semakin tinggi nilainya, semakin baik hasil klasterisasi.
+                """)
+
             st.success("✅ Silhouette Plot selesai dibuat!")
+
 
         # =====================================================
         # TAB 4: SCATTER / PAIRGRID
@@ -979,11 +1017,12 @@ with tab1:
                 # =====================================================
                 if n_tahun > 1:
                     st.markdown(
-                        "Menampilkan hubungan antar tahun untuk setiap variabel yang dipilih.")
+                        "Menampilkan hubungan antar tahun untuk setiap variabel yang dipilih."
+                    )
 
                     # Ambil variabel sesuai yang dipilih user
                     variabels = [(f"({chr(97+i)}) {var}", var)
-                                 for i, var in enumerate(fitur)]
+                                for i, var in enumerate(fitur)]
 
                     # Atur layout kolom dinamis
                     n = len(variabels)
@@ -1006,8 +1045,19 @@ with tab1:
                                 .reindex(df_pivot.index)
                             )
 
+                            # 🎨 Palet warna sama seperti boxplot
+                            n_clusters = df_plot["Cluster"].nunique()
+                            custom_palette = [
+                                "#4C72B0", "#DD8452", "#55A868", "#C44E52",
+                                "#8172B3", "#937860", "#DA8BC3", "#8C8C3E",
+                                "#64B5CD", "#FFB300", "#009688", "#AB47BC",
+                                "#7E57C2", "#EF5350", "#26A69A", "#FF7043"
+                            ]
+                            cluster_palette_hex = custom_palette[:n_clusters]
+
+                            # 🔹 Scatter dengan warna konsisten
                             g = sns.PairGrid(df_pivot, hue="Cluster",
-                                             palette="husl", height=2.2)
+                                            palette=cluster_palette_hex, height=2.2)
                             g.map_lower(sns.scatterplot, s=35,
                                         edgecolor="k", linewidth=0.3)
                             g.map_upper(sns.scatterplot, s=35,
@@ -1019,10 +1069,51 @@ with tab1:
                             plt.tight_layout()
 
                             st.pyplot(g.fig)
-                            # ✅ PairGrid harus ditutup pakai .fig
                             plt.close(g.fig)
 
-                    st.success("✅ Scatter selesai dibuat!")
+
+                    # =====================================================
+                    # 💬 Penjelasan Interaktif Scatter / PairGrid
+                    # =====================================================
+                    with st.expander("📘 Penjelasan Visualisasi Scatter / PairGrid"):
+                        st.markdown("""
+                        Visualisasi scatter ini digunakan untuk **melihat hubungan antar variabel** 
+                        serta bagaimana pola data terbentuk dalam setiap cluster hasil klasterisasi.  
+                        Titik dengan warna yang sama menandakan bahwa data tersebut berada pada **cluster yang sama**.
+
+                        **Cara membaca grafik:**
+                        - Titik-titik dengan warna yang **berkelompok rapi** menunjukkan bahwa variabel yang dipilih mampu **memisahkan cluster dengan baik**.  
+                        - Jika titik-titik dari warna berbeda **saling tumpang tindih**, berarti terdapat kesamaan karakteristik antar cluster.  
+                        - Garis diagonal menggambarkan **distribusi nilai** dari tiap variabel (semakin sempit → semakin seragam).  
+                        - Hubungan antar variabel di bagian bawah dan atas grafik memperlihatkan **arah tren** antar tahun, 
+                        apakah cenderung meningkat, menurun, atau stabil di tiap cluster.
+
+                        Visualisasi ini membantu pengguna memahami bagaimana **harga, konsumsi, dan pengeluaran telur ayam ras**
+                        saling berhubungan antar tahun dan antar cluster, 
+                        serta mengidentifikasi perbedaan karakteristik wilayah berdasarkan hasil klasterisasi.
+                        """)
+
+                    # =====================================================
+                    # 🧠 Auto Interpretasi Hubungan Variabel
+                    # =====================================================
+                    try:
+                        corr_matrix = df_plot[fitur].corr().mean().mean()
+                        if corr_matrix >= 0.7:
+                            insight = "Hubungan antar variabel **sangat kuat**; cluster terbentuk oleh pola yang konsisten antar tahun."
+                        elif corr_matrix >= 0.5:
+                            insight = "Hubungan antar variabel **cukup kuat**; terdapat pola umum yang membedakan beberapa cluster."
+                        elif corr_matrix >= 0.3:
+                            insight = "Hubungan antar variabel **sedang**; beberapa variabel lebih dominan dalam pembentukan cluster."
+                        else:
+                            insight = "Hubungan antar variabel **lemah**; cluster terbentuk dari perbedaan nilai individu, bukan tren umum."
+
+                        st.markdown(f"""
+                        ### 🧩 Interpretasi Umum Hubungan Antar Variabel
+                        Nilai korelasi rata-rata antar variabel: `{corr_matrix:.2f}`  
+                        {insight}
+                        """)
+                    except Exception:
+                        st.info("💡 Tidak dapat menghitung korelasi antar variabel karena jumlah data terlalu sedikit.")
 
                 # =====================================================
                 # CASE 2️⃣: 1 tahun & 1 variabel → Tidak relevan
@@ -1034,6 +1125,9 @@ with tab1:
                     sehingga tidak ada hubungan antar variabel atau tren waktu yang dapat divisualisasikan.  
                     Silakan lihat *boxplot, peta, atau silhouette plot* untuk analisis distribusi antar cluster.
                     """)
+                
+                st.success("✅ Scatter selesai dibuat!")
+
 
 # =========================================================
 # TAB 2: PERBANDINGAN DUA METODE
