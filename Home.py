@@ -162,6 +162,205 @@ st.markdown("<div style='margin-top:45px;'></div>", unsafe_allow_html=True)
 # =========================================================
 
 
+# @st.cache_data
+# def load_all_sheets(excel_path):
+#     xls = pd.ExcelFile(excel_path)
+#     frames = []
+#     for sheet in xls.sheet_names:
+#         df_temp = pd.read_excel(excel_path, sheet_name=sheet)
+#         df_temp["Tahun"] = sheet
+#         frames.append(df_temp)
+#     return pd.concat(frames, ignore_index=True)
+
+
+
+
+# # Pastikan path file data/Dataset Ready.xlsx sudah benar
+# try:
+#     excel_path = "data/Dataset Ready.xlsx"
+#     df = load_all_sheets(excel_path)
+#     df.columns = df.columns.str.strip()
+#     df["Kabupaten/Kota"] = df["Kabupaten/Kota"].astype(
+#         str).str.strip().str.upper()
+
+#     fitur = [c for c in df.select_dtypes(
+#         include=[np.number]).columns if c not in ["Cluster"]]
+#     scaler = MinMaxScaler()
+#     X_scaled = scaler.fit_transform(df[fitur])
+
+#     # Model Clustering (Contoh menggunakan K-Means, sesuaikan jika perlu)
+#     # Di aplikasi skripsi aslimu, ini mungkin akan dinamis
+#     kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
+#     df["Cluster"] = kmeans.fit_predict(X_scaled)
+#     cluster_colors = {0: "#4C72B0", 1: "#DD8452"}  # Biru dan Oranye
+
+    
+
+#     # =========================================================
+#     # 🗺️ PETA INTERAKTIF
+#     # =========================================================
+#     st.markdown("### 🗺️ Peta Visualisasi Hasil Clustering")
+#     with st.spinner("🔄 Memuat peta..."):
+
+#         @st.cache_data
+#         def load_geojson():
+#             geo_path = "data/Indonesia_cities.geojson"
+#             gdf = gpd.read_file(geo_path)
+#             gdf["NAME_2"] = gdf["NAME_2"].str.strip().str.upper()
+#             return gdf
+
+#         gdf = load_geojson()
+#         gdf["NAME_2"] = gdf["NAME_2"].str.replace("KABUPATEN", "", case=False).str.replace(
+#             "KOTA", "", case=False).str.strip().str.upper()
+#         df["Kabupaten/Kota"] = df["Kabupaten/Kota"].str.replace(
+#             "KABUPATEN", "", case=False).str.replace("KOTA", "", case=False).str.strip().str.upper()
+
+#         # Merge data
+#         gdf = gdf.merge(df[["Kabupaten/Kota", "Cluster"] + fitur],
+#                         left_on="NAME_2", right_on="Kabupaten/Kota", how="left")
+
+#         def make_tooltip(row):
+#             if pd.isna(row["Kabupaten/Kota"]) or pd.isna(row["Cluster"]):
+#                 return "<b>Tidak Ada Data</b>"
+
+#             # Format judul (Title Case)
+#             nama_wilayah = row['Kabupaten/Kota'].title().replace("Dki ",
+#                                                                  "DKI ")
+#             teks = f"<b>{nama_wilayah}</b><br><b>Cluster:</b> {int(row['Cluster'])}<hr>"
+
+#             # Format data fitur
+#             for f in fitur:
+#                 if f in row and pd.notnull(row[f]):
+#                     nilai = row[f]
+#                     # Format Rupiah untuk Harga dan Pengeluaran
+#                     if "Harga" in f or "Pengeluaran" in f:
+#                         teks_nilai = f"Rp {nilai:,.0f}"
+#                     else:
+#                         teks_nilai = f"{nilai:,.2f}"
+#                     teks += f"<b>{f}:</b> {teks_nilai}<br>"
+#             return teks
+
+#         gdf["info"] = gdf.apply(make_tooltip, axis=1)
+
+#         m = leafmap.Map(center=[-2.5, 118], zoom=5)
+#         m.add_basemap("CartoDB.Positron")
+
+#         geo_layer = folium.GeoJson(
+#             gdf[["geometry", "Cluster", "info"]],
+#             name="Peta Cluster",
+#             style_function=lambda x: {
+#                 "fillColor": (
+#                     cluster_colors.get(x["properties"].get("Cluster"))
+#                     if pd.notnull(x["properties"].get("Cluster"))
+#                     else "#C8C8C8"  # Warna abu-abu untuk data NaN
+#                 ),
+#                 "color": "#4d4d4d",  # Warna batas
+#                 "weight": 0.4,
+#                 "opacity": 0.6,
+#                 "fillOpacity": 0.9,
+#             },
+#             tooltip=folium.GeoJsonTooltip(fields=["info"], aliases=[
+#                                           ""], labels=False, sticky=True),
+#         )
+#         m.add_layer(geo_layer)
+#         m.to_streamlit(height=550)
+
+#     # =========================================================
+#     # 🧭 INTERPRETASI CLUSTER
+#     # =========================================================
+#     st.markdown("### 🧩 Interpretasi Cluster")
+#     # Memanggil fungsi interpretasi otomatis
+#     try:
+#         auto_labels = interpretasi_untuk_legend_otomatis(df, fitur)
+#         for cluster in sorted(auto_labels.keys()):
+#             color = cluster_colors.get(
+#                 cluster, list(cluster_colors.values())[0])
+#             label = auto_labels[cluster]
+#             st.markdown(
+#                 f"""
+#                 <div style='display:flex; align-items:center; gap:8px; margin-bottom:6px;'>
+#                     <div style='width:16px; height:16px; background-color:{color};
+#                                 border-radius:3px; flex-shrink:0;'></div>
+#                     <div style='font-size:14px; color:#333; line-height:1.4;'>
+#                         <b>Cluster {cluster} :</b> {label}
+#                     </div>
+#                 </div>
+#                 """,
+#                 unsafe_allow_html=True,
+#             )
+#     except NameError:
+#         st.error("Fungsi 'interpretasi_untuk_legend_otomatis' tidak ditemukan. Pastikan file 'modules/interpretasi.py' ada dan benar.")
+#     except Exception as e:
+#         st.error(f"Error saat membuat interpretasi: {e}")
+
+#     st.markdown("<div style='margin-top: 25px;'></div>",
+#                 unsafe_allow_html=True)
+#     # =========================================================
+#     # 📦 BOX PLOT
+#     # =========================================================
+#     with st.expander("📦 Lihat Distribusi Nilai Tiap Variabel per Cluster dan Tahun"):
+#         with st.spinner("🔄 Membuat Boxplot..."):
+#             plt.close("all")
+#             n_vars = len(fitur)
+#             n_cols = min(n_vars, 3)  # Maksimal 3 kolom
+#             cols = st.columns(n_cols, gap="large")
+#             palette = ["#4C72B0", "#DD8452"]
+
+#             for i, var in enumerate(fitur):
+#                 with cols[i % n_cols]:
+#                     fig, ax = plt.subplots(figsize=(4.3, 3.5))
+#                     sns.boxplot(
+#                         x="Tahun", y=var, hue="Cluster",
+#                         data=df, palette=palette, ax=ax,
+#                         fliersize=2, linewidth=0.8
+#                     )
+#                     ax.set_xlabel("Tahun")
+#                     ax.set_ylabel(var)
+#                     ax.grid(True, axis="y", linestyle="--", alpha=0.3)
+
+#                     # Format Y-axis (misal: Rupiah)
+#                     if "Harga" in var or "Pengeluaran" in var:
+#                         ax.yaxis.set_major_formatter(
+#                             plt.FuncFormatter(lambda x, p: f'Rp {x:,.0f}'))
+
+#                     ax.get_legend().remove()
+#                     plt.tight_layout()
+#                     st.pyplot(fig)
+#                     plt.close(fig)
+
+#     # =========================================================
+#     # ⚠️ CATATAN / WARNING
+#     # =========================================================
+#     st.markdown("""
+#     <div class="warning-box">
+#     ⚠️ <b>Catatan:</b> Hasil klasterisasi yang ditampilkan di halaman ini (default) merupakan hasil terbaik yang diperoleh 
+#     berdasarkan evaluasi gabungan indeks <b>Silhouette</b> (tertinggi) dan <b>Davies–Bouldin Index</b> (terendah) 
+#     dari seluruh metode yang diuji pada halaman 'Eksperimen'.
+#     </div>
+#     """, unsafe_allow_html=True)
+
+# # Error handling jika file utama tidak ada
+# except FileNotFoundError as e:
+#     if "Dataset Ready.xlsx" in str(e):
+#         st.error(
+#             "File 'data/Dataset Ready.xlsx' tidak ditemukan. Pastikan file data utama ada.")
+#     elif "Indonesia_cities.geojson" in str(e):
+#         st.error(
+#             "File 'data/Indonesia_cities.geojson' tidak ditemukan. Pastikan file geojson ada.")
+#     else:
+#         st.error(f"File tidak ditemukan: {e}")
+# except ImportError:
+#     st.error("Modul 'interpretasi' tidak ditemukan. Pastikan file 'modules/interpretasi.py' ada di folder 'modules/'.")
+# except Exception as e:
+#     st.error(f"Terjadi error saat memuat data atau memproses halaman: {e}")
+
+
+# =========================================================
+# 📂 LOAD & PROSES DATA
+# =========================================================
+
+# ---------- DATASET CLUSTERING (TAHUNAN) ----------
+
 @st.cache_data
 def load_all_sheets(excel_path):
     xls = pd.ExcelFile(excel_path)
@@ -172,183 +371,417 @@ def load_all_sheets(excel_path):
         frames.append(df_temp)
     return pd.concat(frames, ignore_index=True)
 
-
-# Pastikan path file data/Dataset Ready.xlsx sudah benar
 try:
     excel_path = "data/Dataset Ready.xlsx"
     df = load_all_sheets(excel_path)
-    df.columns = df.columns.str.strip()
-    df["Kabupaten/Kota"] = df["Kabupaten/Kota"].astype(
-        str).str.strip().str.upper()
 
-    fitur = [c for c in df.select_dtypes(
-        include=[np.number]).columns if c not in ["Cluster"]]
+    df.columns = df.columns.str.strip()
+    df["Kabupaten/Kota"] = df["Kabupaten/Kota"].astype(str).str.strip().str.upper()
+
+    fitur = [c for c in df.select_dtypes(include=[np.number]).columns if c not in ["Cluster"]]
+
     scaler = MinMaxScaler()
     X_scaled = scaler.fit_transform(df[fitur])
 
-    # Model Clustering (Contoh menggunakan K-Means, sesuaikan jika perlu)
-    # Di aplikasi skripsi aslimu, ini mungkin akan dinamis
     kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
     df["Cluster"] = kmeans.fit_predict(X_scaled)
+
     cluster_colors = {0: "#4C72B0", 1: "#DD8452"}  # Biru dan Oranye
 
-    # =========================================================
-    # 🗺️ PETA INTERAKTIF
-    # =========================================================
-    st.markdown("### 🗺️ Peta Visualisasi Hasil Clustering")
-    with st.spinner("🔄 Memuat peta..."):
-
-        @st.cache_data
-        def load_geojson():
-            geo_path = "data/Indonesia_cities.geojson"
-            gdf = gpd.read_file(geo_path)
-            gdf["NAME_2"] = gdf["NAME_2"].str.strip().str.upper()
-            return gdf
-
-        gdf = load_geojson()
-        gdf["NAME_2"] = gdf["NAME_2"].str.replace("KABUPATEN", "", case=False).str.replace(
-            "KOTA", "", case=False).str.strip().str.upper()
-        df["Kabupaten/Kota"] = df["Kabupaten/Kota"].str.replace(
-            "KABUPATEN", "", case=False).str.replace("KOTA", "", case=False).str.strip().str.upper()
-
-        # Merge data
-        gdf = gdf.merge(df[["Kabupaten/Kota", "Cluster"] + fitur],
-                        left_on="NAME_2", right_on="Kabupaten/Kota", how="left")
-
-        def make_tooltip(row):
-            if pd.isna(row["Kabupaten/Kota"]) or pd.isna(row["Cluster"]):
-                return "<b>Tidak Ada Data</b>"
-
-            # Format judul (Title Case)
-            nama_wilayah = row['Kabupaten/Kota'].title().replace("Dki ",
-                                                                 "DKI ")
-            teks = f"<b>{nama_wilayah}</b><br><b>Cluster:</b> {int(row['Cluster'])}<hr>"
-
-            # Format data fitur
-            for f in fitur:
-                if f in row and pd.notnull(row[f]):
-                    nilai = row[f]
-                    # Format Rupiah untuk Harga dan Pengeluaran
-                    if "Harga" in f or "Pengeluaran" in f:
-                        teks_nilai = f"Rp {nilai:,.0f}"
-                    else:
-                        teks_nilai = f"{nilai:,.2f}"
-                    teks += f"<b>{f}:</b> {teks_nilai}<br>"
-            return teks
-
-        gdf["info"] = gdf.apply(make_tooltip, axis=1)
-
-        m = leafmap.Map(center=[-2.5, 118], zoom=5)
-        m.add_basemap("CartoDB.Positron")
-
-        geo_layer = folium.GeoJson(
-            gdf[["geometry", "Cluster", "info"]],
-            name="Peta Cluster",
-            style_function=lambda x: {
-                "fillColor": (
-                    cluster_colors.get(x["properties"].get("Cluster"))
-                    if pd.notnull(x["properties"].get("Cluster"))
-                    else "#C8C8C8"  # Warna abu-abu untuk data NaN
-                ),
-                "color": "#4d4d4d",  # Warna batas
-                "weight": 0.4,
-                "opacity": 0.6,
-                "fillOpacity": 0.9,
-            },
-            tooltip=folium.GeoJsonTooltip(fields=["info"], aliases=[
-                                          ""], labels=False, sticky=True),
-        )
-        m.add_layer(geo_layer)
-        m.to_streamlit(height=550)
-
-    # =========================================================
-    # 🧭 INTERPRETASI CLUSTER
-    # =========================================================
-    st.markdown("### 🧩 Interpretasi Cluster")
-    # Memanggil fungsi interpretasi otomatis
-    try:
-        auto_labels = interpretasi_untuk_legend_otomatis(df, fitur)
-        for cluster in sorted(auto_labels.keys()):
-            color = cluster_colors.get(
-                cluster, list(cluster_colors.values())[0])
-            label = auto_labels[cluster]
-            st.markdown(
-                f"""
-                <div style='display:flex; align-items:center; gap:8px; margin-bottom:6px;'>
-                    <div style='width:16px; height:16px; background-color:{color};
-                                border-radius:3px; flex-shrink:0;'></div>
-                    <div style='font-size:14px; color:#333; line-height:1.4;'>
-                        <b>Cluster {cluster} :</b> {label}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    except NameError:
-        st.error("Fungsi 'interpretasi_untuk_legend_otomatis' tidak ditemukan. Pastikan file 'modules/interpretasi.py' ada dan benar.")
-    except Exception as e:
-        st.error(f"Error saat membuat interpretasi: {e}")
-
-    st.markdown("<div style='margin-top: 25px;'></div>",
-                unsafe_allow_html=True)
-    # =========================================================
-    # 📦 BOX PLOT
-    # =========================================================
-    with st.expander("📦 Lihat Distribusi Nilai Tiap Variabel per Cluster dan Tahun"):
-        with st.spinner("🔄 Membuat Boxplot..."):
-            plt.close("all")
-            n_vars = len(fitur)
-            n_cols = min(n_vars, 3)  # Maksimal 3 kolom
-            cols = st.columns(n_cols, gap="large")
-            palette = ["#4C72B0", "#DD8452"]
-
-            for i, var in enumerate(fitur):
-                with cols[i % n_cols]:
-                    fig, ax = plt.subplots(figsize=(4.3, 3.5))
-                    sns.boxplot(
-                        x="Tahun", y=var, hue="Cluster",
-                        data=df, palette=palette, ax=ax,
-                        fliersize=2, linewidth=0.8
-                    )
-                    ax.set_xlabel("Tahun")
-                    ax.set_ylabel(var)
-                    ax.grid(True, axis="y", linestyle="--", alpha=0.3)
-
-                    # Format Y-axis (misal: Rupiah)
-                    if "Harga" in var or "Pengeluaran" in var:
-                        ax.yaxis.set_major_formatter(
-                            plt.FuncFormatter(lambda x, p: f'Rp {x:,.0f}'))
-
-                    ax.get_legend().remove()
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                    plt.close(fig)
-
-    # =========================================================
-    # ⚠️ CATATAN / WARNING
-    # =========================================================
-    st.markdown("""
-    <div class="warning-box">
-    ⚠️ <b>Catatan:</b> Hasil klasterisasi yang ditampilkan di halaman ini (default) merupakan hasil terbaik yang diperoleh 
-    berdasarkan evaluasi gabungan indeks <b>Silhouette</b> (tertinggi) dan <b>Davies–Bouldin Index</b> (terendah) 
-    dari seluruh metode yang diuji pada halaman 'Eksperimen'.
-    </div>
-    """, unsafe_allow_html=True)
-
-# Error handling jika file utama tidak ada
-except FileNotFoundError as e:
-    if "Dataset Ready.xlsx" in str(e):
-        st.error(
-            "File 'data/Dataset Ready.xlsx' tidak ditemukan. Pastikan file data utama ada.")
-    elif "Indonesia_cities.geojson" in str(e):
-        st.error(
-            "File 'data/Indonesia_cities.geojson' tidak ditemukan. Pastikan file geojson ada.")
-    else:
-        st.error(f"File tidak ditemukan: {e}")
-except ImportError:
-    st.error("Modul 'interpretasi' tidak ditemukan. Pastikan file 'modules/interpretasi.py' ada di folder 'modules/'.")
 except Exception as e:
-    st.error(f"Terjadi error saat memuat data atau memproses halaman: {e}")
+    st.error(f"❌ Error saat memuat dataset clustering: {e}")
+
+
+# ---------- DATASET HARGA HARIAN (WILAYAH KECIL) ----------
+
+@st.cache_data
+def load_harga_harian(path):
+    df_raw = pd.read_excel(path)
+    df_raw.columns = df_raw.columns.astype(str)
+
+    id_col = df_raw.columns[0]  # Kabupaten/Kota
+
+    df_long = df_raw.melt(
+        id_vars=id_col,
+        var_name="Tanggal",
+        value_name="Harga"
+    )
+
+    df_long["Tanggal"] = pd.to_datetime(df_long["Tanggal"], errors="coerce")
+    df_long[id_col] = df_long[id_col].str.strip().str.upper()
+    df_long = df_long.rename(columns={id_col: "Kabupaten/Kota"})
+
+    df_long = df_long.dropna(subset=["Harga", "Tanggal"])
+    return df_long
+
+try:
+    df_harian = load_harga_harian("data/harga_harian.xlsx")
+except Exception as e:
+    st.warning(f"⚠️ Dataset harga harian tidak terbaca: {e}")
+    df_harian = None
+
+
+# =========================================================
+# ✅ TAB UTAMA HOME
+# =========================================================
+
+st.markdown("## 📌 Panel Informasi")
+tab_info, tab_map = st.tabs([
+    "📊 Informasi Harga Harian",
+    "🗺️ Pemetaan Clustering"
+])
+
+# =========================================================
+# 📂 LOAD DATA HARIAN (FORMAT WIDE → LONG)
+# =========================================================
+@st.cache_data
+def load_harga_harian():
+    df = pd.read_excel("data/harga_harian.xlsx", sheet_name=0)
+
+    df = df.rename(columns={df.columns[0]: "Kabupaten/Kota"})
+    df["Kabupaten/Kota"] = df["Kabupaten/Kota"].astype(str).str.strip()
+
+    df_long = df.melt(
+        id_vars=["Kabupaten/Kota"],
+        var_name="Tanggal",
+        value_name="Harga"
+    )
+
+    df_long["Tanggal"] = pd.to_datetime(df_long["Tanggal"], errors="coerce")
+    df_long["Harga"] = pd.to_numeric(df_long["Harga"], errors="coerce")
+    df_long = df_long.dropna(subset=["Tanggal", "Harga"])
+
+    df_long["Tahun"] = df_long["Tanggal"].dt.year.astype(int)
+
+    return df_long
+
+
+# =========================================================
+# 📊 TAB — INFORMASI HARGA HARIAN (RANGE TAHUN)
+# =========================================================
+with tab_info:
+    st.subheader("📊 Informasi Harga Telur Ayam Ras Harian")
+
+    df_harian = load_harga_harian()
+
+    # =====================================================
+    # 🔽 RANGE TAHUN (contoh: 2022–2023, 2022–2024)
+    # =====================================================
+    min_year = int(df_harian["Tahun"].min())
+    max_year = int(df_harian["Tahun"].max())
+
+    start_year, end_year = st.slider(
+        "Pilih Range Tahun",
+        min_value=min_year,
+        max_value=max_year,
+        value=(min_year, max_year),
+        step=1
+    )
+
+    df_year = df_harian[
+        (df_harian["Tahun"] >= start_year) &
+        (df_harian["Tahun"] <= end_year)
+    ].copy()
+
+    # =====================================================
+    # 🔽 DROPDOWN Kabupaten/Kota
+    # =====================================================
+    kota = st.selectbox(
+        "Pilih Kabupaten/Kota",
+        sorted(df_year["Kabupaten/Kota"].unique())
+    )
+
+    df_kota = df_year[df_year["Kabupaten/Kota"] == kota].sort_values("Tanggal")
+
+    # =====================================================
+    # 📅 RANGE TANGGAL
+    # =====================================================
+    min_date = df_kota["Tanggal"].min().date()
+    max_date = df_kota["Tanggal"].max().date()
+
+    start_date, end_date = st.date_input(
+        "Pilih Range Tanggal",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date
+    )
+
+    df_final = df_kota[
+        (df_kota["Tanggal"].dt.date >= start_date) &
+        (df_kota["Tanggal"].dt.date <= end_date)
+    ]
+
+    if df_final.empty:
+        st.warning("Tidak ada data pada rentang ini.")
+        st.stop()
+
+    # =====================================================
+    # 📊 METRIK
+    # =====================================================
+    df_final = df_final.sort_values("Tanggal")
+
+    harga_today = df_final.iloc[-1]["Harga"]
+    tanggal_today = df_final.iloc[-1]["Tanggal"].strftime("%d %B %Y")
+
+    harga_min = df_final["Harga"].min()
+    harga_max = df_final["Harga"].max()
+    harga_avg = df_final["Harga"].mean()
+
+    st.metric("💰 Harga Terbaru", f"Rp {harga_today:,.0f}", tanggal_today)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("📉 Minimum", f"Rp {harga_min:,.0f}")
+    c2.metric("📈 Maksimum", f"Rp {harga_max:,.0f}")
+    c3.metric("📊 Rata-rata", f"Rp {harga_avg:,.0f}")
+
+    # =====================================================
+    # 📈 GRAFIK
+    # =====================================================
+    st.line_chart(df_final.set_index("Tanggal")["Harga"])
+
+    st.caption("Sumber: Badan Pangan Nasional")
+
+# =========================================================
+# ✅ TAB 2 — PEMETAAN CLUSTERING ()
+# =========================================================
+
+# with tab_map:
+#     st.subheader("🗺️ Peta Visualisasi Hasil Clustering")
+
+#     if df is None:
+#         st.error("Dataset clustering tidak tersedia.")
+#     else:
+#         with st.spinner("🔄 Memuat peta..."):
+
+#             @st.cache_data
+#             def load_geojson():
+#                 geo_path = "data/Indonesia_cities.geojson"
+#                 gdf = gpd.read_file(geo_path)
+#                 gdf["NAME_2"] = gdf["NAME_2"].str.strip().str.upper()
+#                 return gdf
+
+#             gdf = load_geojson()
+
+#             gdf["NAME_2"] = gdf["NAME_2"].str.replace(
+#                 "KABUPATEN", "", case=False
+#             ).str.replace(
+#                 "KOTA", "", case=False
+#             ).str.strip().str.upper()
+
+#             df["Kabupaten/Kota"] = df["Kabupaten/Kota"].str.replace(
+#                 "KABUPATEN", "", case=False
+#             ).str.replace(
+#                 "KOTA", "", case=False
+#             ).str.strip().str.upper()
+
+#             gdf = gdf.merge(
+#                 df[["Kabupaten/Kota", "Cluster"] + fitur],
+#                 left_on="NAME_2", right_on="Kabupaten/Kota", how="left"
+#             )
+
+#             def make_tooltip(row):
+#                 if pd.isna(row["Kabupaten/Kota"]) or pd.isna(row["Cluster"]):
+#                     return "<b>Tidak Ada Data</b>"
+
+#                 nama_wilayah = row['Kabupaten/Kota'].title().replace("Dki ", "DKI ")
+#                 teks = f"<b>{nama_wilayah}</b><br><b>Cluster:</b> {int(row['Cluster'])}<hr>"
+
+#                 for f in fitur:
+#                     if pd.notnull(row[f]):
+#                         nilai = row[f]
+#                         if "Harga" in f or "Pengeluaran" in f:
+#                             teks += f"<b>{f}:</b> Rp {nilai:,.0f}<br>"
+#                         else:
+#                             teks += f"<b>{f}:</b> {nilai:,.2f}<br>"
+#                 return teks
+
+#             gdf["info"] = gdf.apply(make_tooltip, axis=1)
+
+#             m = leafmap.Map(center=[-2.5, 118], zoom=5)
+#             m.add_basemap("CartoDB.Positron")
+
+#             geo_layer = folium.GeoJson(
+#                 gdf[["geometry", "Cluster", "info"]],
+#                 style_function=lambda x: {
+#                     "fillColor": (
+#                         cluster_colors.get(x["properties"].get("Cluster"))
+#                         if pd.notnull(x["properties"].get("Cluster"))
+#                         else "#C8C8C8"
+#                     ),
+#                     "color": "#4d4d4d",
+#                     "weight": 0.4,
+#                     "opacity": 0.6,
+#                     "fillOpacity": 0.9,
+#                 },
+#                 tooltip=folium.GeoJsonTooltip(fields=["info"], labels=False, sticky=True),
+#             )
+
+#             m.add_layer(geo_layer)
+#             m.to_streamlit(height=550)
+
+with tab_map:
+    st.subheader("🗺️ Visualisasi & Interpretasi Hasil Clustering")
+
+    if df is None:
+        st.error("Dataset clustering tidak tersedia.")
+    else:
+
+        # =========================================================
+        # 🗺️ PETA INTERAKTIF
+        # =========================================================
+        with st.spinner("🔄 Memuat peta..."):
+
+            @st.cache_data
+            def load_geojson():
+                geo_path = "data/Indonesia_cities.geojson"
+                gdf = gpd.read_file(geo_path)
+                gdf["NAME_2"] = gdf["NAME_2"].str.strip().str.upper()
+                return gdf
+
+            gdf = load_geojson()
+            gdf["NAME_2"] = gdf["NAME_2"].str.replace(
+                "KABUPATEN", "", case=False
+            ).str.replace(
+                "KOTA", "", case=False
+            ).str.strip().str.upper()
+
+            df["Kabupaten/Kota"] = df["Kabupaten/Kota"].str.replace(
+                "KABUPATEN", "", case=False
+            ).str.replace(
+                "KOTA", "", case=False
+            ).str.strip().str.upper()
+
+            # Merge data
+            gdf = gdf.merge(
+                df[["Kabupaten/Kota", "Cluster"] + fitur],
+                left_on="NAME_2",
+                right_on="Kabupaten/Kota",
+                how="left"
+            )
+
+            def make_tooltip(row):
+                if pd.isna(row["Kabupaten/Kota"]) or pd.isna(row["Cluster"]):
+                    return "<b>Tidak Ada Data</b>"
+
+                nama_wilayah = row["Kabupaten/Kota"].title().replace("Dki ", "DKI ")
+                teks = f"<b>{nama_wilayah}</b><br><b>Cluster:</b> {int(row['Cluster'])}<hr>"
+
+                for f in fitur:
+                    if f in row and pd.notnull(row[f]):
+                        nilai = row[f]
+                        if "Harga" in f or "Pengeluaran" in f:
+                            teks_nilai = f"Rp {nilai:,.0f}"
+                        else:
+                            teks_nilai = f"{nilai:,.2f}"
+                        teks += f"<b>{f}:</b> {teks_nilai}<br>"
+                return teks
+
+            gdf["info"] = gdf.apply(make_tooltip, axis=1)
+
+            m = leafmap.Map(center=[-2.5, 118], zoom=5)
+            m.add_basemap("CartoDB.Positron")
+
+            geo_layer = folium.GeoJson(
+                gdf[["geometry", "Cluster", "info"]],
+                name="Peta Cluster",
+                style_function=lambda x: {
+                    "fillColor": (
+                        cluster_colors.get(x["properties"].get("Cluster"))
+                        if pd.notnull(x["properties"].get("Cluster"))
+                        else "#C8C8C8"
+                    ),
+                    "color": "#4d4d4d",
+                    "weight": 0.4,
+                    "opacity": 0.6,
+                    "fillOpacity": 0.9,
+                },
+                tooltip=folium.GeoJsonTooltip(
+                    fields=["info"],
+                    aliases=[""],
+                    labels=False,
+                    sticky=True
+                ),
+            )
+
+            m.add_layer(geo_layer)
+            m.to_streamlit(height=550)
+
+        # =========================================================
+        # 🧭 INTERPRETASI CLUSTER
+        # =========================================================
+        st.markdown("### 🧩 Interpretasi Cluster")
+
+        try:
+            auto_labels = interpretasi_untuk_legend_otomatis(df, fitur)
+            for cluster in sorted(auto_labels.keys()):
+                color = cluster_colors.get(cluster, list(cluster_colors.values())[0])
+                label = auto_labels[cluster]
+                st.markdown(
+                    f"""
+                    <div style='display:flex; align-items:center; gap:8px; margin-bottom:6px;'>
+                        <div style='width:16px; height:16px; background-color:{color};
+                                    border-radius:3px;'></div>
+                        <div style='font-size:14px;'>
+                            <b>Cluster {cluster}:</b> {label}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        except Exception as e:
+            st.error(f"Error interpretasi cluster: {e}")
+
+        st.markdown("<div style='margin-top:25px;'></div>", unsafe_allow_html=True)
+
+        # =========================================================
+        # 📦 BOX PLOT
+        # =========================================================
+        with st.expander("📦 Lihat Distribusi Nilai Tiap Variabel per Cluster dan Tahun"):
+            with st.spinner("🔄 Membuat Boxplot..."):
+                plt.close("all")
+
+                n_vars = len(fitur)
+                n_cols = min(n_vars, 3)
+                cols = st.columns(n_cols, gap="large")
+                palette = ["#4C72B0", "#DD8452"]
+
+                for i, var in enumerate(fitur):
+                    with cols[i % n_cols]:
+                        fig, ax = plt.subplots(figsize=(4.3, 3.5))
+                        sns.boxplot(
+                            x="Tahun",
+                            y=var,
+                            hue="Cluster",
+                            data=df,
+                            palette=palette,
+                            ax=ax,
+                            fliersize=2,
+                            linewidth=0.8
+                        )
+                        ax.set_xlabel("Tahun")
+                        ax.set_ylabel(var)
+                        ax.grid(True, axis="y", linestyle="--", alpha=0.3)
+
+                        if "Harga" in var or "Pengeluaran" in var:
+                            ax.yaxis.set_major_formatter(
+                                plt.FuncFormatter(lambda x, p: f"Rp {x:,.0f}")
+                            )
+
+                        ax.get_legend().remove()
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        plt.close(fig)
+
+        # =========================================================
+        # ⚠️ CATATAN
+        # =========================================================
+        st.markdown("""
+        <div class="warning-box">
+        ⚠️ <b>Catatan:</b> Hasil klasterisasi yang ditampilkan di halaman ini merupakan hasil terbaik
+        berdasarkan evaluasi gabungan <b>Silhouette</b> (tertinggi) dan
+        <b>Davies–Bouldin Index</b> (terendah) dari seluruh metode pada halaman Eksperimen.
+        </div>
+        """, unsafe_allow_html=True)
 
 
 st.divider()
